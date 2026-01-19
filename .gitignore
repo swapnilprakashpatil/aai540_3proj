@@ -64,7 +64,6 @@ Desktop.ini
 *.hdf5
 
 # Keep specific small files if needed
-!lightdataset.csv
 !datadictionary.json
 
 # Model files
