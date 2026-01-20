@@ -2,6 +2,11 @@
 
 # CMS Open Payments Risk Scoring & Anomaly Detection
 
+# Members:
+
+- Swapnil Patil
+- Jamshed Nabizada
+
 ## Project Scope
 
 ### Project Background
@@ -58,13 +63,13 @@ The model is expected to learn "unusualness" primarily from:
 
 ### Goals vs Non-Goals
 
-| Goals | Non-Goals |
-|-------|-----------|  
-| Build an end-to-end AWS ML workflow: ingest → preprocess → feature engineering → train → registry → batch scoring | Real-time streaming ingestion or real-time detection |
-| Generate interpretable risk scores and top K anomaly lists with "reason codes" | Automated enforcement actions or definitive fraud claims |
-| Add monitoring for data drift and anomaly-rate drift; retrain on schedule or drift thresholds | Production UI: outputs are batch files/tables and demo artifacts |
-| Keep AWS within limited credits using batch inference and small CPU jobs | Linking external datasets to infer protected attributes or intent |
-| Maintain correct program framing: unusual pattern detection, not wrongdoing/fraud determination | Maximizing state-of-the-art anomaly methods at the cost of simplicity and stability |
+| Goals                                                                                                             | Non-Goals                                                                           |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Build an end-to-end AWS ML workflow: ingest → preprocess → feature engineering → train → registry → batch scoring | Real-time streaming ingestion or real-time detection                                |
+| Generate interpretable risk scores and top K anomaly lists with "reason codes"                                    | Automated enforcement actions or definitive fraud claims                            |
+| Add monitoring for data drift and anomaly-rate drift; retrain on schedule or drift thresholds                     | Production UI: outputs are batch files/tables and demo artifacts                    |
+| Keep AWS within limited credits using batch inference and small CPU jobs                                          | Linking external datasets to infer protected attributes or intent                   |
+| Maintain correct program framing: unusual pattern detection, not wrongdoing/fraud determination                   | Maximizing state-of-the-art anomaly methods at the cost of simplicity and stability |
 
 ---
 
@@ -257,4 +262,3 @@ Small CPU instances for processing/training/batch scoring (e.g., `m5.large`) to 
 Centers for Medicare & Medicaid Services. (2025a). _Open Payments: Program overview and data updates (Program Year 2024 publication)_. Open Payments. https://openpaymentsdata.cms.gov/datasets/download
 
 Centers for Medicare & Medicaid Services. (2025b). _Open Payments data dictionary / methodology documentation for public use files_. Open Payments. https://openpaymentsdata.cms.gov/dataset/e6b17c6a-2534-4207-a4a1-6746a14911ff#data-dictionary
-
