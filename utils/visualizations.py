@@ -18,38 +18,60 @@ class PaymentVisualizer:
         self.palette = palette
         
     def plot_missing_values(self, df: pd.DataFrame, top_n: int = 20, 
-                           figsize: Tuple[int, int] = (12, 6)) -> plt.Figure:
-        # Calculate missing values
-        missing = df.isnull().sum()
-        missing_pct = (missing / len(df) * 100).round(2)
+                           figsize: Tuple[int, int] = (12, 8)) -> plt.Figure:
+        """
+        Create a horizontal bar chart showing columns with missing values.
         
-        # Filter and sort
-        missing_df = pd.DataFrame({
-            'Column': missing.index,
-            'Missing_Count': missing.values,
-            'Missing_Percentage': missing_pct.values
+        Parameters:
+        -----------
+        df : pd.DataFrame
+            Input dataframe
+        top_n : int
+            Number of top columns to display
+        figsize : Tuple[int, int]
+            Figure size
+            
+        Returns:
+        --------
+        plt.Figure
+            Matplotlib figure object
+        """
+        # Calculate missing values
+        missing_stats = pd.DataFrame({
+            'Column': df.columns,
+            'Missing_Count': df.isnull().sum().values,
+            'Missing_Percent': (df.isnull().sum().values / len(df) * 100)
         })
-        missing_df = missing_df[missing_df['Missing_Count'] > 0].sort_values(
-            'Missing_Percentage', ascending=False
-        ).head(top_n)
+        
+        missing_stats = missing_stats[missing_stats['Missing_Count'] > 0].sort_values(
+            'Missing_Percent', ascending=False
+        )
+        
+        if len(missing_stats) == 0:
+            print("No missing values detected")
+            return None
         
         # Create plot
         fig, ax = plt.subplots(figsize=figsize)
         
-        bars = ax.barh(missing_df['Column'], missing_df['Missing_Percentage'], 
-                      color=sns.color_palette("rocket", len(missing_df)))
+        top_missing = missing_stats.head(top_n)
         
-        # Add value labels
-        for i, bar in enumerate(bars):
-            width = bar.get_width()
-            ax.text(width + 1, bar.get_y() + bar.get_height()/2, 
-                   f'{width:.1f}%', ha='left', va='center', fontsize=9)
+        # Color code based on severity
+        colors = ['#e74c3c' if x > 50 else '#f39c12' if x > 20 else '#3498db' 
+                  for x in top_missing['Missing_Percent']]
         
-        ax.set_xlabel('Missing Percentage (%)', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Column Name', fontsize=12, fontweight='bold')
-        ax.set_title(f'Top {top_n} Columns with Missing Values', 
-                    fontsize=14, fontweight='bold', pad=20)
+        ax.barh(range(len(top_missing)), top_missing['Missing_Percent'], 
+                color=colors, edgecolor='black', alpha=0.7)
+        ax.set_yticks(range(len(top_missing)))
+        ax.set_yticklabels(top_missing['Column'])
+        ax.set_xlabel('Missing Values (%)', fontsize=11, fontweight='bold')
+        ax.set_title('Top 20 Columns by Missing Values', fontsize=12, fontweight='bold')
         ax.grid(axis='x', alpha=0.3)
+        
+        # Add percentage labels
+        for i, (idx, row) in enumerate(top_missing.iterrows()):
+            ax.text(row['Missing_Percent'] + 1, i, f"{row['Missing_Percent']:.1f}%", 
+                    va='center', fontsize=9)
         
         plt.tight_layout()
         return fig
@@ -545,4 +567,242 @@ class PaymentVisualizer:
             ax.text(v, i, f' ${v:,.0f}', va='center', fontsize=9)
         
         plt.tight_layout()
+        return fig
+    
+    def plot_payment_distribution_detailed(self, df: pd.DataFrame, 
+                                          payment_col: str = 'Total_Amount_of_Payment_USDollars',
+                                          figsize: Tuple[int, int] = (16, 12)) -> plt.Figure:
+        """
+        Create detailed 4-panel payment distribution visualization.
+        """
+        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        
+        # Histogram
+        axes[0, 0].hist(df[payment_col].dropna(), bins=50, color='steelblue', 
+                        edgecolor='black', alpha=0.7)
+        axes[0, 0].set_xlabel('Payment Amount ($)', fontsize=11, fontweight='bold')
+        axes[0, 0].set_ylabel('Frequency', fontsize=11, fontweight='bold')
+        axes[0, 0].set_title('Payment Amount Distribution', fontsize=12, fontweight='bold')
+        axes[0, 0].grid(alpha=0.3)
+        
+        # Log-scale histogram
+        log_payments = np.log10(df[payment_col][df[payment_col] > 0])
+        axes[0, 1].hist(log_payments, bins=50, color='coral', 
+                        edgecolor='black', alpha=0.7)
+        axes[0, 1].set_xlabel('Log10(Payment Amount)', fontsize=11, fontweight='bold')
+        axes[0, 1].set_ylabel('Frequency', fontsize=11, fontweight='bold')
+        axes[0, 1].set_title('Payment Amount Distribution (Log Scale)', fontsize=12, fontweight='bold')
+        axes[0, 1].grid(alpha=0.3)
+        
+        # Box plot
+        axes[1, 0].boxplot(df[payment_col].dropna(), vert=True, patch_artist=True,
+                           boxprops=dict(facecolor='lightgreen', alpha=0.7),
+                           medianprops=dict(color='red', linewidth=2))
+        axes[1, 0].set_ylabel('Payment Amount ($)', fontsize=11, fontweight='bold')
+        axes[1, 0].set_title('Payment Amount Box Plot', fontsize=12, fontweight='bold')
+        axes[1, 0].grid(alpha=0.3)
+        
+        # Violin plot
+        parts = axes[1, 1].violinplot([df[payment_col].dropna()], vert=True, 
+                                       showmeans=True, showmedians=True)
+        for pc in parts['bodies']:
+            pc.set_facecolor('plum')
+            pc.set_alpha(0.7)
+        axes[1, 1].set_ylabel('Payment Amount ($)', fontsize=11, fontweight='bold')
+        axes[1, 1].set_title('Payment Amount Violin Plot', fontsize=12, fontweight='bold')
+        axes[1, 1].grid(alpha=0.3)
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_categorical_distributions(self, df: pd.DataFrame, categorical_cols: List[str],
+                                      figsize: Tuple[int, int] = (16, None)) -> plt.Figure:
+        """
+        Plot multiple categorical variable distributions.
+        """
+        available_cols = [col for col in categorical_cols if col in df.columns]
+        
+        if len(available_cols) == 0:
+            return None
+            
+        n_cols = min(len(available_cols), 2)
+        n_rows = (len(available_cols) + 1) // 2
+        
+        if figsize[1] is None:
+            figsize = (figsize[0], 6 * n_rows)
+        
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
+        if n_rows * n_cols == 1:
+            axes = [axes]
+        else:
+            axes = axes.flatten()
+        
+        for idx, col in enumerate(available_cols):
+            value_counts = df[col].value_counts().head(15)
+            
+            axes[idx].barh(range(len(value_counts)), value_counts.values,
+                           color=sns.color_palette('viridis', len(value_counts)),
+                           edgecolor='black', alpha=0.7)
+            axes[idx].set_yticks(range(len(value_counts)))
+            axes[idx].set_yticklabels(value_counts.index, fontsize=9)
+            axes[idx].set_xlabel('Count', fontsize=11, fontweight='bold')
+            axes[idx].set_title(f'{col}\n(Top 15)', fontsize=12, fontweight='bold')
+            axes[idx].grid(axis='x', alpha=0.3)
+        
+        # Hide extra subplots
+        for idx in range(len(available_cols), len(axes)):
+            axes[idx].set_visible(False)
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_payment_by_recipient_type(self, df: pd.DataFrame, 
+                                      recipient_type_col: str = 'Covered_Recipient_Type',
+                                      payment_col: str = 'Total_Amount_of_Payment_USDollars',
+                                      figsize: Tuple[int, int] = (16, 6)) -> plt.Figure:
+        """
+        Create side-by-side plots for payment analysis by recipient type.
+        """
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        # Box plot
+        df.boxplot(column=payment_col, by=recipient_type_col, ax=axes[0],
+                   patch_artist=True, grid=True)
+        axes[0].set_xlabel('Recipient Type', fontsize=11, fontweight='bold')
+        axes[0].set_ylabel('Payment Amount ($)', fontsize=11, fontweight='bold')
+        axes[0].set_title('Payment Distribution by Recipient Type', fontsize=12, fontweight='bold')
+        plt.sca(axes[0])
+        plt.xticks(rotation=45, ha='right')
+        
+        # Bar plot - total amounts
+        total_by_type = df.groupby(recipient_type_col)[payment_col].sum().sort_values(ascending=False)
+        colors = sns.color_palette('rocket', len(total_by_type))
+        axes[1].bar(range(len(total_by_type)), total_by_type.values,
+                    color=colors, edgecolor='black', alpha=0.7)
+        axes[1].set_xticks(range(len(total_by_type)))
+        axes[1].set_xticklabels(total_by_type.index, rotation=45, ha='right')
+        axes[1].set_xlabel('Recipient Type', fontsize=11, fontweight='bold')
+        axes[1].set_ylabel('Total Payment Amount ($)', fontsize=11, fontweight='bold')
+        axes[1].set_title('Total Payments by Recipient Type', fontsize=12, fontweight='bold')
+        axes[1].grid(axis='y', alpha=0.3)
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_monthly_trends(self, df: pd.DataFrame, 
+                          payment_col: str = 'Total_Amount_of_Payment_USDollars',
+                          month_col: str = 'Payment_Month',
+                          figsize: Tuple[int, int] = (14, 10)) -> plt.Figure:
+        """
+        Visualize monthly payment trends.
+        """
+        fig, axes = plt.subplots(2, 1, figsize=figsize)
+        
+        # Monthly payment count
+        monthly_counts = df.groupby(month_col).size()
+        axes[0].plot(monthly_counts.index, monthly_counts.values, 
+                     marker='o', linewidth=2, markersize=8, color='steelblue')
+        axes[0].set_xlabel('Month', fontsize=11, fontweight='bold')
+        axes[0].set_ylabel('Number of Payments', fontsize=11, fontweight='bold')
+        axes[0].set_title('Monthly Payment Count', fontsize=12, fontweight='bold')
+        axes[0].grid(alpha=0.3)
+        axes[0].set_xticks(range(1, 13))
+        
+        # Monthly payment total
+        monthly_totals = df.groupby(month_col)[payment_col].sum()
+        axes[1].bar(monthly_totals.index, monthly_totals.values,
+                    color=sns.color_palette('viridis', 12), edgecolor='black', alpha=0.7)
+        axes[1].set_xlabel('Month', fontsize=11, fontweight='bold')
+        axes[1].set_ylabel('Total Payment Amount ($)', fontsize=11, fontweight='bold')
+        axes[1].set_title('Monthly Total Payment Amount', fontsize=12, fontweight='bold')
+        axes[1].grid(axis='y', alpha=0.3)
+        axes[1].set_xticks(range(1, 13))
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_quarterly_comparison(self, df: pd.DataFrame,
+                                 payment_col: str = 'Total_Amount_of_Payment_USDollars',
+                                 quarter_col: str = 'Payment_Quarter',
+                                 figsize: Tuple[int, int] = (10, 6)) -> plt.Figure:
+        """
+        Visualize quarterly payment comparison.
+        """
+        quarterly_stats = df.groupby(quarter_col)[payment_col].agg(['sum']).round(2)
+        quarterly_stats.columns = ['Total ($)']
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        quarterly_stats['Total ($)'].plot(kind='bar', ax=ax, 
+                                           color=['#3498db', '#2ecc71', '#f39c12', '#e74c3c'],
+                                           edgecolor='black', alpha=0.7)
+        ax.set_xlabel('Quarter', fontsize=11, fontweight='bold')
+        ax.set_ylabel('Total Payment Amount ($)', fontsize=11, fontweight='bold')
+        ax.set_title('Quarterly Total Payment Amount', fontsize=12, fontweight='bold')
+        ax.grid(axis='y', alpha=0.3)
+        plt.xticks(rotation=0)
+        plt.tight_layout()
+        return fig
+    
+    def plot_state_comparison(self, df: pd.DataFrame,
+                             state_col: str = 'Recipient_State',
+                             payment_col: str = 'Total_Amount_of_Payment_USDollars',
+                             top_n: int = 20,
+                             figsize: Tuple[int, int] = (14, 12)) -> plt.Figure:
+        """
+        Create dual bar charts comparing states by count and amount.
+        """
+        fig, axes = plt.subplots(2, 1, figsize=figsize)
+        
+        # Top states by count
+        top_states_count = df[state_col].value_counts().head(top_n)
+        axes[0].barh(range(len(top_states_count)), top_states_count.values,
+                     color=sns.color_palette('rocket', len(top_states_count)),
+                     edgecolor='black', alpha=0.7)
+        axes[0].set_yticks(range(len(top_states_count)))
+        axes[0].set_yticklabels(top_states_count.index)
+        axes[0].set_xlabel('Number of Payments', fontsize=11, fontweight='bold')
+        axes[0].set_title(f'Top {top_n} States by Payment Count', fontsize=12, fontweight='bold')
+        axes[0].grid(axis='x', alpha=0.3)
+        
+        # Top states by total amount
+        top_states_amount = df.groupby(state_col)[payment_col].sum().sort_values(ascending=False).head(top_n)
+        axes[1].barh(range(len(top_states_amount)), top_states_amount.values,
+                     color=sns.color_palette('mako', len(top_states_amount)),
+                     edgecolor='black', alpha=0.7)
+        axes[1].set_yticks(range(len(top_states_amount)))
+        axes[1].set_yticklabels(top_states_amount.index)
+        axes[1].set_xlabel('Total Payment Amount ($)', fontsize=11, fontweight='bold')
+        axes[1].set_title(f'Top {top_n} States by Total Payment Amount', fontsize=12, fontweight='bold')
+        axes[1].grid(axis='x', alpha=0.3)
+        
+        plt.tight_layout()
+        return fig
+    
+    def create_interactive_scatter(self, df: pd.DataFrame, 
+                                   x_col: str, y_col: str,
+                                   color_col: Optional[str] = None,
+                                   size_col: Optional[str] = None,
+                                   hover_data: Optional[List[str]] = None,
+                                   title: str = 'Interactive Scatter Plot',
+                                   figsize: Tuple[int, int] = (12, 8)) -> go.Figure:
+        """
+        Create interactive scatter plot using plotly.
+        """
+        fig = px.scatter(
+            df,
+            x=x_col,
+            y=y_col,
+            color=color_col,
+            size=size_col,
+            hover_data=hover_data,
+            title=title,
+            labels={x_col: x_col.replace('_', ' '), y_col: y_col.replace('_', ' ')},
+            height=figsize[1] * 100
+        )
+        
+        fig.update_layout(
+            font=dict(size=12),
+            title_font_size=16
+        )
+        
         return fig
