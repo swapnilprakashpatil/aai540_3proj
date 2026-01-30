@@ -65,6 +65,7 @@ Desktop.ini
 
 # Keep specific small files if needed
 !datadictionary.json
+!headers.csv
 
 # Model files
 *.pkl
