@@ -1,6 +1,6 @@
 # AAI-540 ML Design Document
 
-# CMS Open Payments Risk Scoring & Anomaly Detection
+# CMS Open Payments Anomaly Detection
 
 # Members:
 
