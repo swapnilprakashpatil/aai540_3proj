@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Optional, Tuple, Dict
 import warnings
+from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score
 warnings.filterwarnings('ignore')
 
 
@@ -1154,7 +1155,6 @@ class ModelVisualizer:
                        train_auc: float, test_auc: float,
                        figsize: Tuple[int, int] = (16, 6)) -> plt.Figure:
         """Plot ROC curves for train and test sets"""
-        from sklearn.metrics import roc_curve
         
         fig, axes = plt.subplots(1, 2, figsize=figsize)
         
@@ -1225,10 +1225,17 @@ class ModelVisualizer:
     def plot_grid_search_results(self, grid_results_df: pd.DataFrame, 
                                 figsize: Tuple[int, int] = (16, 12)) -> plt.Figure:
         """Plot grid search results analysis"""
+        # Filter out nan scores
+        valid_df = grid_results_df[grid_results_df['mean_test_score'].notna()].copy()
+        
+        if len(valid_df) == 0:
+            print("Warning: All grid search scores are NaN. Cannot plot results.")
+            return None
+            
         fig, axes = plt.subplots(2, 2, figsize=figsize)
         
         # Plot 1: Score vs n_estimators
-        pivot_estimators = grid_results_df.pivot_table(
+        pivot_estimators = valid_df.pivot_table(
             values='mean_test_score',
             index='param_n_estimators',
             aggfunc='mean'
@@ -1240,7 +1247,7 @@ class ModelVisualizer:
         axes[0, 0].grid(True, alpha=0.3)
         
         # Plot 2: Score vs contamination
-        pivot_contamination = grid_results_df.pivot_table(
+        pivot_contamination = valid_df.pivot_table(
             values='mean_test_score',
             index='param_contamination',
             aggfunc='mean'
@@ -1252,7 +1259,7 @@ class ModelVisualizer:
         axes[0, 1].grid(True, alpha=0.3)
         
         # Plot 3: Training time comparison
-        top_10_params = grid_results_df.head(10)
+        top_10_params = valid_df.head(10)
         param_labels = [f"Config {i+1}" for i in range(len(top_10_params))]
         axes[1, 0].bar(param_labels, top_10_params['mean_fit_time'], color='coral', alpha=0.7)
         axes[1, 0].set_xlabel('Configuration', fontsize=12)
@@ -1263,9 +1270,9 @@ class ModelVisualizer:
         
         # Plot 4: Score vs fit time tradeoff
         scatter = axes[1, 1].scatter(
-            grid_results_df['mean_fit_time'],
-            grid_results_df['mean_test_score'],
-            c=grid_results_df['param_n_estimators'].astype(float),
+            valid_df['mean_fit_time'],
+            valid_df['mean_test_score'],
+            c=valid_df['param_n_estimators'].astype(float),
             s=100,
             alpha=0.6,
             cmap='viridis'
@@ -1278,10 +1285,10 @@ class ModelVisualizer:
         axes[1, 1].grid(True, alpha=0.3)
         
         # Mark best point
-        best_idx = grid_results_df.index[0]
+        best_idx = valid_df.index[0]
         axes[1, 1].scatter(
-            grid_results_df.loc[best_idx, 'mean_fit_time'],
-            grid_results_df.loc[best_idx, 'mean_test_score'],
+            valid_df.loc[best_idx, 'mean_fit_time'],
+            valid_df.loc[best_idx, 'mean_test_score'],
             color='red',
             s=200,
             marker='*',
@@ -1298,10 +1305,21 @@ class ModelVisualizer:
                                    best_score: float,
                                    figsize: Tuple[int, int] = (16, 12)) -> plt.Figure:
         """Plot randomized search results analysis"""
+        # Filter out nan scores
+        valid_df = random_results_df[random_results_df['mean_test_score'].notna()].copy()
+        
+        if len(valid_df) == 0:
+            print("Warning: All random search scores are NaN. Cannot plot results.")
+            return None
+            
+        # Update best_score if needed
+        if np.isnan(best_score) or not np.isfinite(best_score):
+            best_score = valid_df['mean_test_score'].max()
+            
         fig, axes = plt.subplots(2, 2, figsize=figsize)
         
         # Plot 1: Score distribution
-        axes[0, 0].hist(random_results_df['mean_test_score'], bins=20, color='skyblue', edgecolor='black', alpha=0.7)
+        axes[0, 0].hist(valid_df['mean_test_score'], bins=20, color='skyblue', edgecolor='black', alpha=0.7)
         axes[0, 0].axvline(best_score, color='red', linestyle='--', linewidth=2, label=f'Best: {best_score:.6f}')
         axes[0, 0].set_xlabel('Mean Test Score', fontsize=12)
         axes[0, 0].set_ylabel('Frequency', fontsize=12)
@@ -1315,10 +1333,10 @@ class ModelVisualizer:
         param_names = []
         
         for col in param_cols:
-            if col in random_results_df.columns:
-                numeric_vals = pd.to_numeric(random_results_df[col], errors='coerce')
+            if col in valid_df.columns:
+                numeric_vals = pd.to_numeric(valid_df[col], errors='coerce')
                 if numeric_vals.notna().sum() > 0:
-                    corr = numeric_vals.corr(random_results_df['mean_test_score'])
+                    corr = numeric_vals.corr(valid_df['mean_test_score'])
                     if not np.isnan(corr):
                         correlations.append(corr)
                         param_names.append(col.replace('param_', ''))
@@ -1330,9 +1348,9 @@ class ModelVisualizer:
         axes[0, 1].grid(True, alpha=0.3, axis='x')
         
         # Plot 3: Convergence plot (score vs iteration)
-        iterations = range(1, len(random_results_df) + 1)
-        cumulative_best = random_results_df['mean_test_score'].expanding().max()
-        axes[1, 0].plot(iterations, random_results_df['mean_test_score'], 'o', alpha=0.3, label='Individual Scores')
+        iterations = range(1, len(valid_df) + 1)
+        cumulative_best = valid_df['mean_test_score'].expanding().max()
+        axes[1, 0].plot(iterations, valid_df['mean_test_score'], 'o', alpha=0.3, label='Individual Scores')
         axes[1, 0].plot(iterations, cumulative_best, 'r-', linewidth=2, label='Best Score Found')
         axes[1, 0].set_xlabel('Iteration', fontsize=12)
         axes[1, 0].set_ylabel('Test Score', fontsize=12)
@@ -1342,9 +1360,9 @@ class ModelVisualizer:
         
         # Plot 4: Score vs parameters scatter (n_estimators vs contamination)
         scatter = axes[1, 1].scatter(
-            random_results_df['param_n_estimators'],
-            random_results_df['param_contamination'],
-            c=random_results_df['mean_test_score'],
+            valid_df['param_n_estimators'],
+            valid_df['param_contamination'],
+            c=valid_df['mean_test_score'],
             s=100,
             alpha=0.6,
             cmap='RdYlGn'
@@ -1356,10 +1374,10 @@ class ModelVisualizer:
         cbar.set_label('Test Score', fontsize=10)
         
         # Mark best point
-        best_idx = random_results_df.index[0]
+        best_idx = valid_df.index[0]
         axes[1, 1].scatter(
-            random_results_df.loc[best_idx, 'param_n_estimators'],
-            random_results_df.loc[best_idx, 'param_contamination'],
+            valid_df.loc[best_idx, 'param_n_estimators'],
+            valid_df.loc[best_idx, 'param_contamination'],
             color='red',
             s=300,
             marker='*',
