@@ -776,3 +776,782 @@ class PaymentVisualizer:
             )
             
             return fig
+
+
+class ModelVisualizer:
+    """Visualization utilities for anomaly detection models"""
+    
+    def __init__(self):
+        plt.style.use('seaborn-v0_8-darkgrid')
+        sns.set_palette("husl")
+    
+    def plot_training_history(self, history: Dict, figsize: Tuple[int, int] = (15, 5)) -> plt.Figure:
+        """Plot training history for neural network models (e.g., Autoencoder)"""
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        # Loss plot
+        axes[0].plot(history['loss'], label='Training Loss', linewidth=2)
+        if 'val_loss' in history:
+            axes[0].plot(history['val_loss'], label='Validation Loss', linewidth=2)
+        axes[0].set_xlabel('Epoch', fontsize=11, fontweight='bold')
+        axes[0].set_ylabel('Loss (MSE)', fontsize=11, fontweight='bold')
+        axes[0].set_title('Model Training History', fontsize=12, fontweight='bold')
+        axes[0].legend(fontsize=10)
+        axes[0].grid(True, alpha=0.3)
+        
+        # MAE plot (if available)
+        if 'mae' in history:
+            axes[1].plot(history['mae'], label='Training MAE', linewidth=2)
+            if 'val_mae' in history:
+                axes[1].plot(history['val_mae'], label='Validation MAE', linewidth=2)
+            axes[1].set_xlabel('Epoch', fontsize=11, fontweight='bold')
+            axes[1].set_ylabel('MAE', fontsize=11, fontweight='bold')
+            axes[1].set_title('Model Training MAE', fontsize=12, fontweight='bold')
+            axes[1].legend(fontsize=10)
+            axes[1].grid(True, alpha=0.3)
+        else:
+            axes[1].axis('off')
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_anomaly_scores(self, train_scores: np.ndarray, test_scores: np.ndarray,
+                           threshold: float, model_name: str = 'Model',
+                           figsize: Tuple[int, int] = (15, 10)) -> plt.Figure:
+        """Plot anomaly score distributions and comparisons"""
+        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        
+        # Combined histogram
+        ax1 = axes[0, 0]
+        ax1.hist(train_scores, bins=50, alpha=0.7, label='Train', color='blue', edgecolor='black')
+        ax1.hist(test_scores, bins=50, alpha=0.7, label='Test', color='red', edgecolor='black')
+        ax1.axvline(threshold, color='green', linestyle='--', linewidth=2.5, label='Threshold')
+        ax1.set_xlabel('Anomaly Score', fontsize=11, fontweight='bold')
+        ax1.set_ylabel('Frequency', fontsize=11, fontweight='bold')
+        ax1.set_title(f'{model_name} Score Distribution', fontsize=12, fontweight='bold')
+        ax1.legend(fontsize=10)
+        ax1.grid(True, alpha=0.3)
+        
+        # All scores histogram
+        all_scores = np.concatenate([train_scores, test_scores])
+        ax2 = axes[0, 1]
+        ax2.hist(all_scores, bins=100, alpha=0.8, color='purple', edgecolor='black')
+        ax2.axvline(threshold, color='red', linestyle='--', linewidth=2.5, label='Threshold')
+        ax2.axvline(all_scores.mean(), color='orange', linestyle=':', linewidth=2.5, label='Mean')
+        ax2.set_xlabel('Anomaly Score', fontsize=11, fontweight='bold')
+        ax2.set_ylabel('Frequency', fontsize=11, fontweight='bold')
+        ax2.set_title('Overall Score Distribution', fontsize=12, fontweight='bold')
+        ax2.legend(fontsize=10)
+        ax2.grid(True, alpha=0.3)
+        
+        # Percentile distribution
+        ax3 = axes[1, 0]
+        percentiles = np.arange(1, 101)
+        ax3.plot(percentiles, np.percentile(all_scores, percentiles), 
+                linewidth=2.5, color='darkblue', marker='o', markersize=3)
+        ax3.axhline(y=threshold, color='red', linestyle='--', linewidth=2.5, 
+                   label=f'Threshold: {threshold:.6f}')
+        ax3.fill_between(percentiles, 0, np.percentile(all_scores, percentiles), 
+                        alpha=0.2, color='blue')
+        ax3.set_xlabel('Percentile', fontsize=11, fontweight='bold')
+        ax3.set_ylabel('Anomaly Score', fontsize=11, fontweight='bold')
+        ax3.set_title('Score Percentile Distribution', fontsize=12, fontweight='bold')
+        ax3.legend(fontsize=10)
+        ax3.grid(True, alpha=0.3)
+        
+        # Box plot comparison
+        ax4 = axes[1, 1]
+        data_to_plot = [train_scores, test_scores]
+        bp = ax4.boxplot(data_to_plot, labels=['Train', 'Test'], 
+                        patch_artist=True, widths=0.6)
+        bp['boxes'][0].set_facecolor('lightblue')
+        bp['boxes'][1].set_facecolor('lightcoral')
+        ax4.axhline(y=threshold, color='green', linestyle='--', linewidth=2, label='Threshold')
+        ax4.set_ylabel('Anomaly Score', fontsize=11, fontweight='bold')
+        ax4.set_title('Score Distribution Comparison', fontsize=12, fontweight='bold')
+        ax4.legend(fontsize=10)
+        ax4.grid(True, alpha=0.3, axis='y')
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_anomaly_comparison(self, normal_df: pd.DataFrame, anomaly_df: pd.DataFrame,
+                               amount_col: str = 'total_amount_of_payment_usdollars',
+                               score_col: str = 'anomaly_score',
+                               figsize: Tuple[int, int] = (16, 6)) -> plt.Figure:
+        """Compare normal vs anomalous payments"""
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        normal_amounts = normal_df[amount_col].dropna()
+        anomaly_amounts = anomaly_df[amount_col].dropna()
+        
+        # Histogram comparison
+        ax1 = axes[0]
+        ax1.hist(normal_amounts, bins=50, alpha=0.6, label='Normal', color='blue', edgecolor='black')
+        ax1.hist(anomaly_amounts, bins=50, alpha=0.6, label='Anomalies', color='red', edgecolor='black')
+        ax1.set_xlabel('Payment Amount (USD)', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('Frequency', fontsize=12, fontweight='bold')
+        ax1.set_title('Payment Amount Distribution: Normal vs Anomalies', fontsize=13, fontweight='bold')
+        ax1.legend(fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        
+        # Box plot comparison
+        ax2 = axes[1]
+        data_to_plot = [normal_amounts, anomaly_amounts]
+        bp = ax2.boxplot(data_to_plot, labels=['Normal', 'Anomalies'], 
+                        patch_artist=True, widths=0.6)
+        bp['boxes'][0].set_facecolor('lightblue')
+        bp['boxes'][1].set_facecolor('lightcoral')
+        ax2.set_ylabel('Payment Amount (USD)', fontsize=12, fontweight='bold')
+        ax2.set_title('Payment Amount Box Plot Comparison', fontsize=13, fontweight='bold')
+        ax2.grid(True, alpha=0.3, axis='y')
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_isolation_forest_analysis(self, estimator_range: List[int],
+                                      mean_scores_train: List[float],
+                                      mean_scores_test: List[float],
+                                      std_scores_train: List[float],
+                                      std_scores_test: List[float],
+                                      training_times: List[float],
+                                      anomaly_counts: List[int],
+                                      final_anomaly_count: int,
+                                      figsize: Tuple[int, int] = (16, 12)) -> plt.Figure:
+        """Plot Isolation Forest training curve analysis"""
+        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        
+        # Mean Anomaly Score Convergence
+        ax1 = axes[0, 0]
+        ax1.plot(estimator_range, mean_scores_train, marker='o', linewidth=2.5, 
+                markersize=8, label='Train', color='blue')
+        ax1.plot(estimator_range, mean_scores_test, marker='s', linewidth=2.5, 
+                markersize=8, label='Test', color='orange')
+        ax1.set_xlabel('Number of Estimators', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('Mean Anomaly Score', fontsize=12, fontweight='bold')
+        ax1.set_title('Anomaly Score Convergence', fontsize=13, fontweight='bold')
+        ax1.legend(fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        
+        # Score Stability
+        ax2 = axes[0, 1]
+        ax2.plot(estimator_range, std_scores_train, marker='o', linewidth=2.5, 
+                markersize=8, label='Train', color='blue')
+        ax2.plot(estimator_range, std_scores_test, marker='s', linewidth=2.5, 
+                markersize=8, label='Test', color='orange')
+        ax2.set_xlabel('Number of Estimators', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('Std Dev of Anomaly Score', fontsize=12, fontweight='bold')
+        ax2.set_title('Score Stability Over Estimators', fontsize=13, fontweight='bold')
+        ax2.legend(fontsize=11)
+        ax2.grid(True, alpha=0.3)
+        
+        # Training Time
+        ax3 = axes[1, 0]
+        ax3.plot(estimator_range, training_times, marker='D', linewidth=2.5, 
+                markersize=8, color='green')
+        ax3.set_xlabel('Number of Estimators', fontsize=12, fontweight='bold')
+        ax3.set_ylabel('Training Time (seconds)', fontsize=12, fontweight='bold')
+        ax3.set_title('Training Time vs Model Complexity', fontsize=13, fontweight='bold')
+        ax3.grid(True, alpha=0.3)
+        
+        # Anomaly Count Stability
+        ax4 = axes[1, 1]
+        ax4.plot(estimator_range, anomaly_counts, marker='v', linewidth=2.5, 
+                markersize=8, color='red')
+        ax4.axhline(y=final_anomaly_count, color='darkred', linestyle='--', linewidth=2, 
+                   label=f'Final: {final_anomaly_count}')
+        ax4.set_xlabel('Number of Estimators', fontsize=12, fontweight='bold')
+        ax4.set_ylabel('Detected Anomalies', fontsize=12, fontweight='bold')
+        ax4.set_title('Anomaly Detection Stability', fontsize=13, fontweight='bold')
+        ax4.legend(fontsize=11)
+        ax4.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_reconstruction_error_analysis(self, train_mse: np.ndarray, test_mse: np.ndarray,
+                                          threshold: float, all_reconstruction_errors: np.ndarray,
+                                          figsize: Tuple[int, int] = (15, 5)) -> plt.Figure:
+        """Plot reconstruction error analysis for Autoencoder"""
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        # Reconstruction Error Distribution
+        ax1 = axes[0]
+        ax1.hist(train_mse, bins=50, alpha=0.7, label='Training', color='blue', edgecolor='black')
+        ax1.hist(test_mse, bins=50, alpha=0.7, label='Test', color='red', edgecolor='black')
+        ax1.axvline(threshold, color='green', linestyle='--', linewidth=2.5, label='Threshold')
+        ax1.set_xlabel('Reconstruction Error (MSE)', fontsize=11, fontweight='bold')
+        ax1.set_ylabel('Frequency', fontsize=11, fontweight='bold')
+        ax1.set_title('Reconstruction Error Distribution', fontsize=12, fontweight='bold')
+        ax1.legend(fontsize=10)
+        ax1.grid(True, alpha=0.3)
+        
+        # Percentile Distribution
+        ax2 = axes[1]
+        percentiles = np.arange(1, 101)
+        ax2.plot(percentiles, np.percentile(all_reconstruction_errors, percentiles), 
+                linewidth=2.5, color='darkblue', marker='o', markersize=3)
+        ax2.axhline(y=threshold, color='red', linestyle='--', linewidth=2.5, 
+                   label=f'95th Percentile: {threshold:.6f}')
+        ax2.fill_between(percentiles, 0, np.percentile(all_reconstruction_errors, percentiles), 
+                        alpha=0.2, color='blue')
+        ax2.set_xlabel('Percentile', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('Anomaly Score', fontsize=12, fontweight='bold')
+        ax2.set_title('Anomaly Score Percentile Distribution', fontsize=13, fontweight='bold')
+        ax2.legend(fontsize=11)
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        return fig
+    
+    def print_anomaly_stats(self, normal_df: pd.DataFrame, anomaly_df: pd.DataFrame,
+                           score_col: str = 'anomaly_score',
+                           comparison_features: Optional[List[str]] = None) -> pd.DataFrame:
+        """Print statistical comparison between normal and anomalous payments"""
+        # Default comparison features
+        if comparison_features is None:
+            comparison_features = ['total_amount_of_payment_usdollars']
+        
+        # Filter existing columns
+        available_features = [f for f in comparison_features if f in normal_df.columns and f in anomaly_df.columns]
+        
+        if not available_features:
+            print("No comparison features available")
+            return None
+        
+        # Create comparison statistics
+        comparison_stats = pd.DataFrame({
+            'Normal_Mean': normal_df[available_features].mean(),
+            'Normal_Median': normal_df[available_features].median(),
+            'Anomaly_Mean': anomaly_df[available_features].mean(),
+            'Anomaly_Median': anomaly_df[available_features].median(),
+            'Difference_%': ((anomaly_df[available_features].mean() - normal_df[available_features].mean()) / 
+                            normal_df[available_features].mean() * 100)
+        })
+        
+        # Score statistics
+        score_stats = pd.DataFrame({
+            'Metric': ['Mean', 'Median', 'Min', 'Max'],
+            'Normal': [
+                normal_df[score_col].mean(),
+                normal_df[score_col].median(),
+                normal_df[score_col].min(),
+                normal_df[score_col].max()
+            ],
+            'Anomaly': [
+                anomaly_df[score_col].mean(),
+                anomaly_df[score_col].median(),
+                anomaly_df[score_col].min(),
+                anomaly_df[score_col].max()
+            ]
+        })
+        
+        print("\n=== Statistical Comparison ===")
+        print(comparison_stats)
+        print(f"\n=== {score_col.replace('_', ' ').title()} Statistics ===")
+        print(score_stats)
+        
+        return comparison_stats
+    
+    def display_top_anomalies(self, anomalies_df: pd.DataFrame, 
+                             score_col: str = 'anomaly_score',
+                             top_n: int = 10,
+                             key_columns: Optional[List[str]] = None) -> None:
+        """Display top anomalies with key features"""
+        if key_columns is None:
+            # Default columns to display
+            key_columns = [
+                score_col,
+                'anomaly_score_percentile',
+                'total_amount_of_payment_usdollars',
+                'covered_recipient_type',
+                'nature_of_payment_or_transfer_of_value'
+            ]
+        
+        # Filter available columns
+        available_cols = [col for col in key_columns if col in anomalies_df.columns]
+        
+        # Add optional columns if they exist
+        optional_cols = ['amt_to_avg_ratio', 'hist_pay_avg', 'is_new_recipient', 
+                        'is_weekend', 'is_high_risk_nature']
+        for col in optional_cols:
+            if col in anomalies_df.columns and col not in available_cols:
+                available_cols.append(col)
+        
+        print(f"\n=== Top {top_n} Anomalous Payments (n={len(anomalies_df):,}) ===")
+        return anomalies_df[available_cols].head(top_n)
+    
+    def plot_xgboost_training_curves(self, results: Dict, best_iteration: int = None,
+                                     figsize: Tuple[int, int] = (16, 5)) -> plt.Figure:
+        """Plot XGBoost training curves and overfitting analysis"""
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        train_auc = results['validation_0']['auc']
+        test_auc = results['validation_1']['auc']
+        epochs = range(len(train_auc))
+        
+        # AUC curves
+        ax1 = axes[0]
+        ax1.plot(epochs, train_auc, linewidth=2.5, label='Train AUC', color='blue', marker='o', markersize=4)
+        ax1.plot(epochs, test_auc, linewidth=2.5, label='Test AUC', color='orange', marker='s', markersize=4)
+        if best_iteration is not None:
+            ax1.axvline(x=best_iteration, color='red', linestyle='--', 
+                       linewidth=2, label=f'Best Iteration: {best_iteration}')
+        ax1.set_xlabel('Iteration', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('AUC Score', fontsize=12, fontweight='bold')
+        ax1.set_title('XGBoost Training Curve (AUC)', fontsize=13, fontweight='bold')
+        ax1.legend(fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        
+        # Overfitting analysis
+        ax2 = axes[1]
+        gap = np.array(train_auc) - np.array(test_auc)
+        ax2.plot(epochs, gap, linewidth=2.5, color='purple', marker='D', markersize=4)
+        ax2.axhline(y=0, color='green', linestyle='--', linewidth=2, label='No Gap')
+        if best_iteration is not None:
+            ax2.axvline(x=best_iteration, color='red', linestyle='--', 
+                       linewidth=2, label=f'Best Iteration: {best_iteration}')
+        ax2.set_xlabel('Iteration', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('AUC Gap (Train - Test)', fontsize=12, fontweight='bold')
+        ax2.set_title('Overfitting Analysis', fontsize=13, fontweight='bold')
+        ax2.legend(fontsize=11)
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_confusion_matrices(self, y_train, train_pred, y_test, test_pred,
+                               figsize: Tuple[int, int] = (14, 5)) -> plt.Figure:
+        """Plot confusion matrices for train and test sets"""
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        # Train confusion matrix
+        cm_train = confusion_matrix(y_train, train_pred)
+        ax1 = axes[0]
+        sns.heatmap(cm_train, annot=True, fmt='d', cmap='Blues', 
+                   xticklabels=['Normal', 'Anomaly'], 
+                   yticklabels=['Normal', 'Anomaly'],
+                   ax=ax1, cbar_kws={'label': 'Count'})
+        ax1.set_xlabel('Predicted', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('Actual', fontsize=12, fontweight='bold')
+        ax1.set_title('Train Confusion Matrix', fontsize=13, fontweight='bold')
+        
+        # Test confusion matrix
+        cm_test = confusion_matrix(y_test, test_pred)
+        ax2 = axes[1]
+        sns.heatmap(cm_test, annot=True, fmt='d', cmap='Oranges', 
+                   xticklabels=['Normal', 'Anomaly'], 
+                   yticklabels=['Normal', 'Anomaly'],
+                   ax=ax2, cbar_kws={'label': 'Count'})
+        ax2.set_xlabel('Predicted', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('Actual', fontsize=12, fontweight='bold')
+        ax2.set_title('Test Confusion Matrix', fontsize=13, fontweight='bold')
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_roc_curves(self, y_train, train_proba, y_test, test_proba,
+                       train_auc: float, test_auc: float,
+                       figsize: Tuple[int, int] = (16, 6)) -> plt.Figure:
+        """Plot ROC curves for train and test sets"""
+        from sklearn.metrics import roc_curve
+        
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        # Train ROC
+        fpr_train, tpr_train, _ = roc_curve(y_train, train_proba)
+        ax1 = axes[0]
+        ax1.plot(fpr_train, tpr_train, linewidth=2.5, color='blue', 
+                label=f'Train AUC = {train_auc:.4f}')
+        ax1.plot([0, 1], [0, 1], 'r--', linewidth=2, label='Random Classifier')
+        ax1.set_xlabel('False Positive Rate', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('True Positive Rate', fontsize=12, fontweight='bold')
+        ax1.set_title('Train ROC Curve', fontsize=13, fontweight='bold')
+        ax1.legend(fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        
+        # Test ROC
+        fpr_test, tpr_test, _ = roc_curve(y_test, test_proba)
+        ax2 = axes[1]
+        ax2.plot(fpr_test, tpr_test, linewidth=2.5, color='orange', 
+                label=f'Test AUC = {test_auc:.4f}')
+        ax2.plot([0, 1], [0, 1], 'r--', linewidth=2, label='Random Classifier')
+        ax2.set_xlabel('False Positive Rate', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('True Positive Rate', fontsize=12, fontweight='bold')
+        ax2.set_title('Test ROC Curve', fontsize=13, fontweight='bold')
+        ax2.legend(fontsize=11)
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_feature_importance(self, feature_names, feature_importances,
+                               top_n: int = 15, figsize: Tuple[int, int] = (16, 6)) -> Tuple[plt.Figure, pd.DataFrame]:
+        """Plot feature importance analysis"""
+        feature_importance = pd.DataFrame({
+            'feature': feature_names,
+            'importance': feature_importances
+        }).sort_values('importance', ascending=False)
+        
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        # Feature importance bar plot
+        ax1 = axes[0]
+        top_features = feature_importance.head(top_n)
+        ax1.barh(range(len(top_features)), top_features['importance'], color='steelblue', edgecolor='black')
+        ax1.set_yticks(range(len(top_features)))
+        ax1.set_yticklabels(top_features['feature'])
+        ax1.invert_yaxis()
+        ax1.set_xlabel('Importance Score', fontsize=12, fontweight='bold')
+        ax1.set_title(f'Top {top_n} Feature Importance', fontsize=13, fontweight='bold')
+        ax1.grid(True, alpha=0.3, axis='x')
+        
+        # Cumulative importance
+        ax2 = axes[1]
+        cumulative_importance = feature_importance['importance'].cumsum() / feature_importance['importance'].sum()
+        ax2.plot(range(len(cumulative_importance)), cumulative_importance, 
+                linewidth=2.5, color='darkgreen', marker='o', markersize=4)
+        ax2.axhline(y=0.8, color='red', linestyle='--', linewidth=2, label='80% Threshold')
+        ax2.axhline(y=0.9, color='orange', linestyle='--', linewidth=2, label='90% Threshold')
+        ax2.set_xlabel('Number of Features', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('Cumulative Importance', fontsize=12, fontweight='bold')
+        ax2.set_title('Cumulative Feature Importance', fontsize=13, fontweight='bold')
+        ax2.legend(fontsize=11)
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        return fig, feature_importance
+    
+    def plot_grid_search_results(self, grid_results_df: pd.DataFrame, 
+                                figsize: Tuple[int, int] = (16, 12)) -> plt.Figure:
+        """Plot grid search results analysis"""
+        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        
+        # Plot 1: Score vs n_estimators
+        pivot_estimators = grid_results_df.pivot_table(
+            values='mean_test_score',
+            index='param_n_estimators',
+            aggfunc='mean'
+        )
+        axes[0, 0].plot(pivot_estimators.index, pivot_estimators.values, marker='o', linewidth=2, markersize=8)
+        axes[0, 0].set_xlabel('Number of Estimators', fontsize=12)
+        axes[0, 0].set_ylabel('Mean Test Score', fontsize=12)
+        axes[0, 0].set_title('Performance vs. Number of Estimators', fontsize=14, fontweight='bold')
+        axes[0, 0].grid(True, alpha=0.3)
+        
+        # Plot 2: Score vs contamination
+        pivot_contamination = grid_results_df.pivot_table(
+            values='mean_test_score',
+            index='param_contamination',
+            aggfunc='mean'
+        )
+        axes[0, 1].plot(pivot_contamination.index, pivot_contamination.values, marker='s', linewidth=2, markersize=8, color='green')
+        axes[0, 1].set_xlabel('Contamination', fontsize=12)
+        axes[0, 1].set_ylabel('Mean Test Score', fontsize=12)
+        axes[0, 1].set_title('Performance vs. Contamination', fontsize=14, fontweight='bold')
+        axes[0, 1].grid(True, alpha=0.3)
+        
+        # Plot 3: Training time comparison
+        top_10_params = grid_results_df.head(10)
+        param_labels = [f"Config {i+1}" for i in range(len(top_10_params))]
+        axes[1, 0].bar(param_labels, top_10_params['mean_fit_time'], color='coral', alpha=0.7)
+        axes[1, 0].set_xlabel('Configuration', fontsize=12)
+        axes[1, 0].set_ylabel('Mean Fit Time (s)', fontsize=12)
+        axes[1, 0].set_title('Training Time - Top 10 Configurations', fontsize=14, fontweight='bold')
+        axes[1, 0].tick_params(axis='x', rotation=45)
+        axes[1, 0].grid(True, alpha=0.3, axis='y')
+        
+        # Plot 4: Score vs fit time tradeoff
+        scatter = axes[1, 1].scatter(
+            grid_results_df['mean_fit_time'],
+            grid_results_df['mean_test_score'],
+            c=grid_results_df['param_n_estimators'].astype(float),
+            s=100,
+            alpha=0.6,
+            cmap='viridis'
+        )
+        axes[1, 1].set_xlabel('Mean Fit Time (s)', fontsize=12)
+        axes[1, 1].set_ylabel('Mean Test Score', fontsize=12)
+        axes[1, 1].set_title('Score vs. Training Time Trade-off', fontsize=14, fontweight='bold')
+        cbar = plt.colorbar(scatter, ax=axes[1, 1])
+        cbar.set_label('N Estimators', fontsize=10)
+        axes[1, 1].grid(True, alpha=0.3)
+        
+        # Mark best point
+        best_idx = grid_results_df.index[0]
+        axes[1, 1].scatter(
+            grid_results_df.loc[best_idx, 'mean_fit_time'],
+            grid_results_df.loc[best_idx, 'mean_test_score'],
+            color='red',
+            s=200,
+            marker='*',
+            edgecolors='black',
+            linewidths=2,
+            label='Best Model'
+        )
+        axes[1, 1].legend()
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_random_search_results(self, random_results_df: pd.DataFrame, 
+                                   best_score: float,
+                                   figsize: Tuple[int, int] = (16, 12)) -> plt.Figure:
+        """Plot randomized search results analysis"""
+        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        
+        # Plot 1: Score distribution
+        axes[0, 0].hist(random_results_df['mean_test_score'], bins=20, color='skyblue', edgecolor='black', alpha=0.7)
+        axes[0, 0].axvline(best_score, color='red', linestyle='--', linewidth=2, label=f'Best: {best_score:.6f}')
+        axes[0, 0].set_xlabel('Mean Test Score', fontsize=12)
+        axes[0, 0].set_ylabel('Frequency', fontsize=12)
+        axes[0, 0].set_title('Score Distribution - Randomized Search', fontsize=14, fontweight='bold')
+        axes[0, 0].legend()
+        axes[0, 0].grid(True, alpha=0.3, axis='y')
+        
+        # Plot 2: Parameter importance (correlation with score)
+        param_cols = ['param_n_estimators', 'param_contamination', 'param_max_features']
+        correlations = []
+        param_names = []
+        
+        for col in param_cols:
+            if col in random_results_df.columns:
+                numeric_vals = pd.to_numeric(random_results_df[col], errors='coerce')
+                if numeric_vals.notna().sum() > 0:
+                    corr = numeric_vals.corr(random_results_df['mean_test_score'])
+                    if not np.isnan(corr):
+                        correlations.append(corr)
+                        param_names.append(col.replace('param_', ''))
+        
+        axes[0, 1].barh(param_names, correlations, color='lightgreen', edgecolor='black', alpha=0.7)
+        axes[0, 1].set_xlabel('Correlation with Test Score', fontsize=12)
+        axes[0, 1].set_title('Parameter Importance', fontsize=14, fontweight='bold')
+        axes[0, 1].axvline(0, color='black', linewidth=0.5)
+        axes[0, 1].grid(True, alpha=0.3, axis='x')
+        
+        # Plot 3: Convergence plot (score vs iteration)
+        iterations = range(1, len(random_results_df) + 1)
+        cumulative_best = random_results_df['mean_test_score'].expanding().max()
+        axes[1, 0].plot(iterations, random_results_df['mean_test_score'], 'o', alpha=0.3, label='Individual Scores')
+        axes[1, 0].plot(iterations, cumulative_best, 'r-', linewidth=2, label='Best Score Found')
+        axes[1, 0].set_xlabel('Iteration', fontsize=12)
+        axes[1, 0].set_ylabel('Test Score', fontsize=12)
+        axes[1, 0].set_title('Convergence Plot', fontsize=14, fontweight='bold')
+        axes[1, 0].legend()
+        axes[1, 0].grid(True, alpha=0.3)
+        
+        # Plot 4: Score vs parameters scatter (n_estimators vs contamination)
+        scatter = axes[1, 1].scatter(
+            random_results_df['param_n_estimators'],
+            random_results_df['param_contamination'],
+            c=random_results_df['mean_test_score'],
+            s=100,
+            alpha=0.6,
+            cmap='RdYlGn'
+        )
+        axes[1, 1].set_xlabel('N Estimators', fontsize=12)
+        axes[1, 1].set_ylabel('Contamination', fontsize=12)
+        axes[1, 1].set_title('Parameter Space Exploration', fontsize=14, fontweight='bold')
+        cbar = plt.colorbar(scatter, ax=axes[1, 1])
+        cbar.set_label('Test Score', fontsize=10)
+        
+        # Mark best point
+        best_idx = random_results_df.index[0]
+        axes[1, 1].scatter(
+            random_results_df.loc[best_idx, 'param_n_estimators'],
+            random_results_df.loc[best_idx, 'param_contamination'],
+            color='red',
+            s=300,
+            marker='*',
+            edgecolors='black',
+            linewidths=2,
+            label='Best Model',
+            zorder=5
+        )
+        axes[1, 1].legend()
+        axes[1, 1].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_search_comparison(self, baseline_train_time: float, 
+                              grid_search_time: float, 
+                              random_search_time: float,
+                              grid_results_df: pd.DataFrame,
+                              random_results_df: pd.DataFrame,
+                              figsize: Tuple[int, int] = (16, 6)) -> plt.Figure:
+        """Plot comparison between search methods"""
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        # Plot 1: Search time comparison
+        methods = ['Baseline', 'Grid Search', 'Random Search']
+        times = [baseline_train_time, grid_search_time, random_search_time]
+        colors_bar = ['#3498db', '#e74c3c', '#2ecc71']
+        
+        bars = axes[0].bar(methods, times, color=colors_bar, alpha=0.7, edgecolor='black', linewidth=1.5)
+        axes[0].set_ylabel('Time (seconds)', fontsize=12)
+        axes[0].set_title('Hyperparameter Search Time Comparison', fontsize=14, fontweight='bold')
+        axes[0].grid(True, alpha=0.3, axis='y')
+        
+        # Add value labels on bars
+        for bar, time_val in zip(bars, times):
+            height = bar.get_height()
+            axes[0].text(bar.get_x() + bar.get_width()/2., height,
+                        f'{time_val:.2f}s\n({time_val/60:.2f}m)',
+                        ha='center', va='bottom', fontsize=10, fontweight='bold')
+        
+        # Plot 2: Configurations tested vs time efficiency
+        configs = [1, len(grid_results_df), len(random_results_df)]
+        time_per_config = [t/c if c > 0 else 0 for t, c in zip(times, configs)]
+        
+        ax2 = axes[1]
+        ax2_twin = ax2.twinx()
+        
+        x_pos = np.arange(len(methods))
+        width = 0.35
+        
+        bar1 = ax2.bar(x_pos - width/2, configs, width, label='Configs Tested', color='#3498db', alpha=0.7, edgecolor='black')
+        bar2 = ax2_twin.bar(x_pos + width/2, time_per_config, width, label='Time per Config', color='#e67e22', alpha=0.7, edgecolor='black')
+        
+        ax2.set_xlabel('Method', fontsize=12)
+        ax2.set_ylabel('Configurations Tested', fontsize=12, color='#3498db')
+        ax2_twin.set_ylabel('Time per Configuration (s)', fontsize=12, color='#e67e22')
+        ax2.set_title('Search Efficiency Comparison', fontsize=14, fontweight='bold')
+        ax2.set_xticks(x_pos)
+        ax2.set_xticklabels(methods)
+        ax2.tick_params(axis='y', labelcolor='#3498db')
+        ax2_twin.tick_params(axis='y', labelcolor='#e67e22')
+        ax2.grid(True, alpha=0.3, axis='y')
+        
+        # Add legends
+        ax2.legend(loc='upper left')
+        ax2_twin.legend(loc='upper right')
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_model_comparison(self, baseline_test_scores: np.ndarray,
+                             optimized_test_scores: np.ndarray,
+                             baseline_train_anomalies: int,
+                             baseline_test_anomalies: int,
+                             optimized_train_anomalies: int,
+                             optimized_test_anomalies: int,
+                             X_train_len: int,
+                             X_test_len: int,
+                             baseline_score_mean: float,
+                             optimized_score_mean: float,
+                             baseline_score_std: float,
+                             optimized_score_std: float,
+                             figsize: Tuple[int, int] = (16, 12)) -> plt.Figure:
+        """Plot baseline vs optimized model comparison"""
+        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        
+        # Plot 1: Test score distribution comparison
+        axes[0, 0].hist(baseline_test_scores, bins=50, alpha=0.5, label='Baseline', color='blue', edgecolor='black')
+        axes[0, 0].hist(optimized_test_scores, bins=50, alpha=0.5, label='Optimized', color='green', edgecolor='black')
+        axes[0, 0].axvline(baseline_test_scores.mean(), color='blue', linestyle='--', linewidth=2, label='Baseline Mean')
+        axes[0, 0].axvline(optimized_test_scores.mean(), color='green', linestyle='--', linewidth=2, label='Optimized Mean')
+        axes[0, 0].set_xlabel('Anomaly Score', fontsize=12)
+        axes[0, 0].set_ylabel('Frequency', fontsize=12)
+        axes[0, 0].set_title('Test Score Distribution Comparison', fontsize=14, fontweight='bold')
+        axes[0, 0].legend()
+        axes[0, 0].grid(True, alpha=0.3, axis='y')
+        
+        # Plot 2: Box plot comparison
+        box_data = [baseline_test_scores, optimized_test_scores]
+        box_labels = ['Baseline', 'Optimized']
+        bp = axes[0, 1].boxplot(box_data, labels=box_labels, patch_artist=True,
+                                boxprops=dict(facecolor='lightblue', alpha=0.7),
+                                medianprops=dict(color='red', linewidth=2))
+        axes[0, 1].set_ylabel('Anomaly Score', fontsize=12)
+        axes[0, 1].set_title('Score Distribution - Box Plot', fontsize=14, fontweight='bold')
+        axes[0, 1].grid(True, alpha=0.3, axis='y')
+        
+        # Plot 3: Anomaly detection rate comparison
+        categories = ['Train', 'Test']
+        baseline_rates = [
+            baseline_train_anomalies/X_train_len*100,
+            baseline_test_anomalies/X_test_len*100
+        ]
+        optimized_rates = [
+            optimized_train_anomalies/X_train_len*100,
+            optimized_test_anomalies/X_test_len*100
+        ]
+        
+        x_pos = np.arange(len(categories))
+        width = 0.35
+        
+        bars1 = axes[1, 0].bar(x_pos - width/2, baseline_rates, width, label='Baseline', color='blue', alpha=0.7, edgecolor='black')
+        bars2 = axes[1, 0].bar(x_pos + width/2, optimized_rates, width, label='Optimized', color='green', alpha=0.7, edgecolor='black')
+        
+        axes[1, 0].set_ylabel('Anomaly Detection Rate (%)', fontsize=12)
+        axes[1, 0].set_title('Anomaly Detection Rate Comparison', fontsize=14, fontweight='bold')
+        axes[1, 0].set_xticks(x_pos)
+        axes[1, 0].set_xticklabels(categories)
+        axes[1, 0].legend()
+        axes[1, 0].grid(True, alpha=0.3, axis='y')
+        
+        # Add value labels
+        for bars in [bars1, bars2]:
+            for bar in bars:
+                height = bar.get_height()
+                axes[1, 0].text(bar.get_x() + bar.get_width()/2., height,
+                               f'{height:.2f}%', ha='center', va='bottom', fontsize=10)
+        
+        # Plot 4: Performance metrics comparison
+        metrics = ['Score\nSeparation', 'Consistency\n(1/Std)', 'Detection\nRate']
+        baseline_metrics_normalized = [
+            abs(baseline_score_mean) / max(abs(baseline_score_mean), abs(optimized_score_mean)),
+            (1/baseline_score_std) / max(1/baseline_score_std, 1/optimized_score_std),
+            (baseline_test_anomalies/X_test_len) / max(baseline_test_anomalies/X_test_len, optimized_test_anomalies/X_test_len)
+        ]
+        optimized_metrics_normalized = [
+            abs(optimized_score_mean) / max(abs(baseline_score_mean), abs(optimized_score_mean)),
+            (1/optimized_score_std) / max(1/baseline_score_std, 1/optimized_score_std),
+            (optimized_test_anomalies/X_test_len) / max(baseline_test_anomalies/X_test_len, optimized_test_anomalies/X_test_len)
+        ]
+        
+        x_pos = np.arange(len(metrics))
+        width = 0.35
+        
+        axes[1, 1].bar(x_pos - width/2, baseline_metrics_normalized, width, label='Baseline', color='blue', alpha=0.7, edgecolor='black')
+        axes[1, 1].bar(x_pos + width/2, optimized_metrics_normalized, width, label='Optimized', color='green', alpha=0.7, edgecolor='black')
+        axes[1, 1].set_ylabel('Normalized Performance', fontsize=12)
+        axes[1, 1].set_title('Performance Metrics Comparison', fontsize=14, fontweight='bold')
+        axes[1, 1].set_xticks(x_pos)
+        axes[1, 1].set_xticklabels(metrics)
+        axes[1, 1].set_ylim([0, 1.1])
+        axes[1, 1].legend()
+        axes[1, 1].grid(True, alpha=0.3, axis='y')
+        
+        plt.tight_layout()
+        return fig
+    
+    def plot_latency_distribution(self, latencies: List[float],
+                                  latency_stats: Dict[str, float],
+                                  figsize: Tuple[int, int] = (16, 5)) -> plt.Figure:
+        """Plot inference latency distribution with histogram and box plot"""
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        
+        # Histogram
+        axes[0].hist(latencies, bins=20, color='steelblue', edgecolor='black', alpha=0.7)
+        axes[0].axvline(latency_stats['Mean'], color='red', linestyle='--', linewidth=2, 
+                       label=f"Mean: {latency_stats['Mean']:.2f} ms")
+        axes[0].axvline(latency_stats['P95'], color='orange', linestyle='--', linewidth=2, 
+                       label=f"P95: {latency_stats['P95']:.2f} ms")
+        axes[0].set_xlabel('Latency (ms)', fontsize=12)
+        axes[0].set_ylabel('Frequency', fontsize=12)
+        axes[0].set_title('Inference Latency Distribution', fontsize=14, fontweight='bold')
+        axes[0].legend()
+        axes[0].grid(True, alpha=0.3)
+        
+        # Box plot
+        bp = axes[1].boxplot(latencies, vert=True, patch_artist=True,
+                            boxprops=dict(facecolor='lightblue', alpha=0.7),
+                            medianprops=dict(color='red', linewidth=2))
+        axes[1].set_ylabel('Latency (ms)', fontsize=12)
+        axes[1].set_title('Latency Box Plot', fontsize=14, fontweight='bold')
+        axes[1].grid(True, alpha=0.3, axis='y')
+        
+        plt.tight_layout()
+        return fig
