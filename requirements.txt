@@ -1,19 +1,23 @@
 pandas>=2.0.0
-numpy>=1.24.0
+numpy>=1.24.0,<2.0.0
 scipy>=1.10.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 plotly>=5.14.0
-scikit-learn>=1.2.0
-tensorflow>=2.13.0
-xgboost>=2.0.0
-joblib>=1.3.0
+kaleido>=0.2.1
+# Use sklearn 1.4.0+ (compatible with AutoGluon)
+# For SageMaker deployment, we'll use PyTorch container or custom container approach
+scikit-learn>=1.4.0,<1.8.0
+tensorflow>=2.16.1
+xgboost>=2.0.0,<3.0.0
+joblib>=1.3.0,<2.0.0
+transformers[sentencepiece]>=4.38.0,<4.50
+nvidia-ml-py3>=7.352.0,<8.0
 jupyter>=1.0.0
 ipykernel>=6.22.0
 ipywidgets>=8.0.0
 python-dateutil>=2.8.2
 pytz>=2023.3
-kaleido>=0.2.1
 boto3>=1.28.0
 sagemaker>=2.180.0
 awswrangler>=3.5.0
