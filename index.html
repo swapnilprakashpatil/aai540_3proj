@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>cms_anomaly_detection</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>index</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7528,6 +7528,7 @@ a.anchor-link {
 <p>Primary dataset: Open Payments Program Year 2024 (General Payments). PY2024 was published June 30, 2025, and covers payments made between January 1 and December 31, 2024. CMS reports PY2024 includes approximately 16.16 million records totaling $13.18B in payments/transfers of value, and the site reflects the most recent seven years of data (CMS, 2025a).</p>
 <p>NOTE: The dataset is large and due to AWS credit limitations, we will be working with a subset of the data (e.g., 1 million records) for the purposes of this project. The workflow and code will be designed to scale to the full dataset when resources allow.</p>
 <p>Dataset source: <a href="https://openpaymentsdata.cms.gov/dataset/e6b17c6a-2534-4207-a4a1-6746a14911ff#data-table">CMS Open Payments Data</a></p>
+<h2 id="Data-Privacy-&amp;-Ethics">Data Privacy &amp; Ethics<a class="anchor-link" href="#Data-Privacy-&amp;-Ethics">¶</a></h2><p>Because Open Payments is public, it typically does not include clinical details (PHI), but it can still contain identifiable information (PII) about covered recipients and related entities, so it should be handled as sensitive. The data subjects are physicians and non-physician practitioners; the data types include names/identifiers, location fields, payer/manufacturer info, payment amount/date, and payment category. CMS collects and publishes the dataset, while the project team ingests and uses it (e.g., via S3/Athena) to generate anomaly scores for compliance-style review. Storage and processing should follow least-privilege access, encryption in transit/at rest, data minimization (only required columns), controlled logging, and retention rules, with outputs ideally using pseudonymous identifiers where possible.</p>
 </div>
 </div>
 </div>
@@ -7552,6 +7553,7 @@ a.anchor-link {
 <li>Recipient Type Analysis</li>
 <li>State-Level Analysis</li>
 <li>Temporal Trend Analysis</li>
+<li>Interpretation of the Exploratory Data Analysis</li>
 </ul>
 </li>
 <li><a href="#6-feature-engineering">6. Feature Engineering</a><ul>
@@ -7567,6 +7569,9 @@ a.anchor-link {
 <li>Model Training</li>
 <li>Anomaly Detection</li>
 <li>Performance Evaluation</li>
+<li>Anomaly Analysis by Payment Amount</li>
+<li>Training Performance Statistics</li>
+<li>Interpretation of Isolation Forest Results</li>
 </ul>
 </li>
 <li><a href="#8-autoencoder-model-training">8. Autoencoder Model Training</a><ul>
@@ -7574,6 +7579,7 @@ a.anchor-link {
 <li>Training with Early Stopping</li>
 <li>Reconstruction Error Analysis</li>
 <li>Visualization</li>
+<li>Interpretation of Autoencoder Results</li>
 </ul>
 </li>
 <li><a href="#9-xgboost-model-training">9. XGBoost Model Training</a><ul>
@@ -7581,6 +7587,7 @@ a.anchor-link {
 <li>Model Configuration</li>
 <li>Training &amp; Evaluation</li>
 <li>Feature Importance</li>
+<li>Interpretation of XGBoost Results</li>
 </ul>
 </li>
 </ul>
@@ -7589,6 +7596,8 @@ a.anchor-link {
 <li>Grid Search</li>
 <li>Randomized Search</li>
 <li>Model Comparison</li>
+<li>Hyperparameter Tuning Summary</li>
+<li>Interpretation of Hyperparameter Tuning Results</li>
 </ul>
 </li>
 <li><a href="#11-model-deployment-to-sagemaker">11. Model Deployment to SageMaker</a><ul>
@@ -7601,8 +7610,15 @@ a.anchor-link {
 <li>Model Quality Monitoring</li>
 <li>CloudWatch Alarms</li>
 <li>Deployment Summary</li>
+<li>Model Deployment and MLOps</li>
 </ul>
 </li>
+</ul>
+<h3 id="Analysis-&amp;-Recommendations">Analysis &amp; Recommendations<a class="anchor-link" href="#Analysis-&amp;-Recommendations">¶</a></h3><ul>
+<li><a href="#model-bias-and-monitoring">Model Bias and Monitoring</a></li>
+<li><a href="#future-improvements--next-steps">Future Improvements &amp; Next Steps</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#references">References</a></li>
 </ul>
 <hr/>
 </div>
@@ -13468,6 +13484,17 @@ Deployment configuration saved: s3://cmsopenpaymentsystemslight/cms-open-payment
 </ol>
 <p>Retraining is scheduled or triggered when drift is detected, then the new model is registered, validated, and deployed through the same approval gates. This keeps performance stable over time while adapting to evolving payment patterns.</p>
 <p>If anomaly rates and score distributions match the notebook and remain stable over time, the end-to-end pipeline is functioning correctly and is production-ready. Large sudden changes typically point to upstream data format/category issues, while gradual shifts usually indicate real-world behavior change and the need for retraining.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3066d158">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h1 id="Model-Bias-and-Monitoring">Model Bias and Monitoring<a class="anchor-link" href="#Model-Bias-and-Monitoring">¶</a></h1><p>Model bias can show up differently across the three models used. Isolation Forest and the autoencoder may over-flag groups that naturally have different payment patterns (certain specialties, large institutions, or specific geographies) because their behavior looks “rare” compared to the overall population, and both can also mistakenly treat data quality problems (invalid state values, mis-encoded payment nature) as anomalies, which can disproportionately impact certain entities. The XGBoost model can amplify bias even more because it learns from pseudo-labels; if the pseudo-labeling process already over-flags a subgroup, XGBoost will reproduce that pattern with very high confidence. Monitoring should therefore include regular checks of anomaly rates and score distributions by subgroup (recipient type, specialty, state, payer, and nature of payment), plus drift checks for new/invalid category values, and review of top drivers (ratios, counts, payment-included fields) to confirm anomalies represent meaningful risk rather than encoding artifacts; when skew is detected, thresholds should be recalibrated, features cleaned, and pseudo-label rules revisited before retraining.</p>
 </div>
 </div>
 </div>
