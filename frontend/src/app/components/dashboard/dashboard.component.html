@@ -1,0 +1,339 @@
+<div class="dashboard-container">
+  <!-- Project Information Cards -->
+  <div class="info-section">
+    <div class="section-header">
+      <h2 class="section-title">Project Overview</h2>
+      <button
+        mat-icon-button
+        (click)="toggleInfoCards()"
+        class="toggle-all-btn"
+        matTooltip="{{
+          infoCardsExpanded ? 'Collapse all cards' : 'Expand all cards'
+        }}"
+      >
+        <mat-icon>{{
+          infoCardsExpanded ? "expand_less" : "expand_more"
+        }}</mat-icon>
+      </button>
+    </div>
+    <div class="info-cards-grid" *ngIf="infoCardsExpanded">
+      <!-- Objective Card -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon">gps_fixed</mat-icon>
+            Project Objective
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>
+            Develop an end-to-end anomaly detection pipeline for the CMS Open
+            Payments dataset to identify potentially unusual or high-risk
+            payment patterns between healthcare providers and pharmaceutical
+            companies.
+          </p>
+          <ul class="feature-list">
+            <li>Clean and engineer features at scale</li>
+            <li>Train multiple anomaly detection models</li>
+            <li>Produce interpretable risk scores</li>
+            <li>Enable continuous monitoring for data drift</li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Algorithms Card -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon">psychology</mat-icon>
+            ML Algorithms
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="algorithm-item">
+            <strong>Isolation Forest</strong>
+            <p>
+              Primary unsupervised model for anomaly detection on aggregated
+              features
+            </p>
+          </div>
+          <div class="algorithm-item">
+            <strong>Autoencoders</strong>
+            <p>
+              Deep learning approach for reconstruction-based anomaly detection
+            </p>
+          </div>
+          <div class="algorithm-item">
+            <strong>XGBoost</strong>
+            <p>
+              Gradient boosting with pseudo-label generation for supervised
+              learning
+            </p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Tech Stack Card -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon">settings</mat-icon>
+            Technology Stack
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="tech-category">
+            <strong>Frontend</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">Angular 17</span>
+              <span class="tech-tag">TypeScript</span>
+              <span class="tech-tag">Material Design</span>
+              <span class="tech-tag">Chart.js</span>
+            </div>
+          </div>
+          <div class="tech-category">
+            <strong>Backend & ML</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">AWS Lambda</span>
+              <span class="tech-tag">SageMaker</span>
+              <span class="tech-tag">Python 3.11</span>
+              <span class="tech-tag">scikit-learn</span>
+            </div>
+          </div>
+          <div class="tech-category">
+            <strong>Infrastructure</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">Terraform</span>
+              <span class="tech-tag">AWS Athena</span>
+              <span class="tech-tag">API Gateway</span>
+              <span class="tech-tag">Amplify</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Dataset Card -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="card-icon">insert_chart</mat-icon>
+            Dataset Information
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="dataset-info">
+            <h4>CMS Open Payments Program Year 2024</h4>
+            <p class="dataset-description">
+              Public dataset providing transparency about financial
+              relationships between healthcare providers and
+              pharmaceutical/medical device companies.
+            </p>
+            <div class="dataset-stats">
+              <div class="dataset-stat">
+                <span class="stat-number">16.16M</span>
+                <span class="stat-text">Total Records</span>
+              </div>
+              <div class="dataset-stat">
+                <span class="stat-number">$13.18B</span>
+                <span class="stat-text">Payment Value</span>
+              </div>
+              <div class="dataset-stat">
+                <span class="stat-number">91</span>
+                <span class="stat-text">Columns</span>
+              </div>
+            </div>
+            <p class="dataset-note">
+              <strong>Source:</strong> Centers for Medicare & Medicaid Services
+              (CMS)<br />
+              <strong>Coverage:</strong> January 1 - December 31, 2024<br />
+              <strong>Published:</strong> June 30, 2025
+            </p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-section" *ngIf="stats">
+    <h2 class="section-title">Analysis Results</h2>
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon total">bar_chart</mat-icon>
+          <div class="stat-value">{{ stats.totalRecords | number }}</div>
+          <div class="stat-label">Total Records</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon anomaly">error_outline</mat-icon>
+          <div class="stat-value">{{ stats.anomalyCount | number }}</div>
+          <div class="stat-label">Anomalies Detected</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon percentage">trending_up</mat-icon>
+          <div class="stat-value">
+            {{ stats.anomalyPercentage | number: "1.2-2" }}%
+          </div>
+          <div class="stat-label">Anomaly Rate</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon amount">attach_money</mat-icon>
+          <div class="stat-value">
+            {{ formatCurrency(stats.avgAnomalyAmount) }}
+          </div>
+          <div class="stat-label">Avg Anomaly Amount</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="charts-grid">
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>Anomaly Distribution</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas
+            baseChart
+            [type]="pieChartType"
+            [data]="pieChartData"
+            [options]="pieChartOptions"
+          >
+          </canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>Top States by Anomaly Count</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas
+            baseChart
+            [type]="barChartType"
+            [data]="barChartData"
+            [options]="barChartOptions"
+          >
+          </canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="chart-card full-width">
+      <mat-card-header>
+        <mat-card-title>Payment Amount Distribution</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas
+            baseChart
+            [type]="lineChartType"
+            [data]="lineChartData"
+            [options]="lineChartOptions"
+          >
+          </canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="chart-card full-width">
+      <mat-card-header>
+        <mat-card-title>Anomaly Score vs Payment Amount</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas
+            baseChart
+            [type]="scatterChartType"
+            [data]="scatterChartData"
+            [options]="scatterChartOptions"
+          >
+          </canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Anomalies Table -->
+  <mat-card class="table-card">
+    <mat-card-header>
+      <mat-card-title>
+        Anomaly Details ({{ anomalyRecords.length }} records)
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="table-container">
+        <table mat-table [dataSource]="anomalyRecords" class="anomaly-table">
+          <ng-container matColumnDef="record_id">
+            <th mat-header-cell *matHeaderCellDef>Record ID</th>
+            <td mat-cell *matCellDef="let record">
+              {{ record.record.Record_ID }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="recipient_state">
+            <th mat-header-cell *matHeaderCellDef>State</th>
+            <td mat-cell *matCellDef="let record">
+              {{ record.record.Recipient_State || "N/A" }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="payment_amount">
+            <th mat-header-cell *matHeaderCellDef>Payment Amount</th>
+            <td mat-cell *matCellDef="let record" class="amount">
+              {{
+                formatCurrency(record.record.Total_Amount_of_Payment_USDollars)
+              }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="payment_date">
+            <th mat-header-cell *matHeaderCellDef>Payment Date</th>
+            <td mat-cell *matCellDef="let record">
+              {{ formatDate(record.record.Date_of_Payment) }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="nature_of_payment">
+            <th mat-header-cell *matHeaderCellDef>Nature of Payment</th>
+            <td mat-cell *matCellDef="let record">
+              {{
+                record.record.Nature_of_Payment_or_Transfer_of_Value || "N/A"
+              }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="anomaly_score">
+            <th mat-header-cell *matHeaderCellDef>Anomaly Score</th>
+            <td mat-cell *matCellDef="let record" class="score">
+              {{ record.anomaly_score | number: "1.2-2" }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let record">
+              <mat-chip class="anomaly-chip">Anomaly</mat-chip>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

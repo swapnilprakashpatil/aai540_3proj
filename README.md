@@ -262,3 +262,248 @@ Small CPU instances for processing/training/batch scoring (e.g., `m5.large`) to 
 Centers for Medicare & Medicaid Services. (2025a). _Open Payments: Program overview and data updates (Program Year 2024 publication)_. Open Payments. https://openpaymentsdata.cms.gov/datasets/download
 
 Centers for Medicare & Medicaid Services. (2025b). _Open Payments data dictionary / methodology documentation for public use files_. Open Payments. https://openpaymentsdata.cms.gov/dataset/e6b17c6a-2534-4207-a4a1-6746a14911ff#data-dictionary
+
+---
+
+## Deployment Infrastructure
+
+### Architecture Overview
+
+This project includes a complete production-ready deployment infrastructure consisting of:
+
+1. **Angular Frontend** - Web application for visualizing anomaly detection results
+2. **AWS Lambda** - Serverless API for querying Athena and invoking SageMaker
+3. **API Gateway** - REST API endpoint for frontend-backend communication
+4. **AWS Amplify** - Hosting and CI/CD for the Angular application
+5. **Terraform** - Infrastructure as Code (IaC) for automated deployment
+6. **GitHub Actions** - CI/CD pipelines for automated testing and deployment
+
+### Project Structure
+
+```
+aai540_3proj/
+├── frontend/                  # Angular web application
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── components/   # Dashboard, charts, tables
+│   │   │   ├── models/       # TypeScript interfaces
+│   │   │   └── services/     # API service layer
+│   │   └── environments/     # Environment configs
+│   ├── package.json
+│   └── angular.json
+│
+├── lambda/                    # AWS Lambda functions
+│   └── anomaly_detection/
+│       ├── handler.py        # Main Lambda handler
+│       └── requirements.txt
+│
+├── terraform/                 # Infrastructure as Code
+│   ├── main.tf               # Main configuration
+│   ├── lambda.tf             # Lambda resources
+│   ├── api_gateway.tf        # API Gateway resources
+│   ├── amplify.tf            # Amplify app resources
+│   ├── variables.tf          # Input variables
+│   └── outputs.tf            # Output values
+│
+├── .github/
+│   └── workflows/            # CI/CD pipelines
+│       ├── deploy.yml        # Main deployment
+│       ├── frontend.yml      # Frontend CI
+│       ├── lambda.yml        # Lambda CI
+│       └── terraform.yml     # Terraform validation
+│
+├── scripts/                   # Deployment scripts
+│   ├── deploy.sh             # Bash deployment script
+│   └── deploy.ps1            # PowerShell deployment script
+│
+├── notebooks/                 # Jupyter notebooks
+├── config/                    # Configuration files
+├── data/                      # Data files
+└── utils/                     # Utility modules
+```
+
+### Frontend Application
+
+The Angular application provides an interactive dashboard for:
+
+- Triggering anomaly detection on 10,000 random records from Athena
+- Visualizing results with multiple chart types:
+  - Pie chart: Anomaly distribution
+  - Bar chart: Top states by anomaly count
+  - Line chart: Payment amount distribution
+  - Scatter plot: Anomaly score vs payment amount
+- Displaying detailed anomaly records in a sortable table
+- Real-time statistics and metrics
+
+**Features:**
+
+- Modern, responsive UI with Angular Material
+- Real-time data visualization with Chart.js
+- RESTful API integration
+- Production-ready build configuration
+
+### Lambda Function
+
+The Lambda function serves as the backend API that:
+
+1. Accepts POST requests with `record_count` parameter
+2. Queries AWS Athena for random CMS payment records
+3. Prepares features for the ML model
+4. Invokes the SageMaker endpoint for anomaly detection
+5. Processes and returns structured results
+
+**Key Features:**
+
+- Serverless architecture (pay-per-use)
+- Automatic scaling
+- CloudWatch logging and monitoring
+- CORS support for cross-origin requests
+- Error handling and retry logic
+
+### Infrastructure as Code (Terraform)
+
+All AWS resources are defined and managed using Terraform:
+
+- **Lambda Function** with IAM roles and policies
+- **API Gateway** with CORS configuration
+- **AWS Amplify** for frontend hosting
+- **S3 Bucket** for Athena query results
+- **CloudWatch** log groups for monitoring
+- **IAM Roles** with least-privilege permissions
+
+### CI/CD Pipelines
+
+Automated GitHub Actions workflows for:
+
+1. **Terraform Validation** - Validates IaC on every push
+2. **Frontend Build** - Builds and tests Angular app
+3. **Lambda CI** - Lints and packages Lambda function
+4. **Full Deployment** - Deploys complete infrastructure to AWS
+
+### Quick Start
+
+#### Prerequisites
+
+- AWS Account with appropriate permissions
+- Terraform (v1.6+)
+- Node.js (v18+)
+- Python (v3.11+)
+- AWS CLI configured with valid credentials (see [DEPLOYMENT.md](DEPLOYMENT.md#2-configure-aws-authentication) for authentication options)
+
+#### Deploy in 3 Steps
+
+1. **Clone and Configure**
+
+   ```bash
+   git clone <repository-url>
+   cd aai540_3proj
+   cp .env.example .env
+   # Edit .env with your values
+   ```
+
+2. **Deploy Infrastructure**
+
+   ```bash
+   cd terraform
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+3. **Access Application**
+   ```bash
+   # Get the frontend URL
+   terraform output amplify_app_url
+   ```
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Deployment Options
+
+#### Option 1: Automated CI/CD (Recommended)
+
+Push to `main` branch to trigger automated deployment via GitHub Actions.
+
+#### Option 2: Manual Deployment
+
+Use the provided scripts:
+
+- **Linux/Mac:** `./scripts/deploy.sh`
+- **Windows:** `.\scripts\deploy.ps1`
+
+#### Option 3: Step-by-Step Terraform
+
+Follow the comprehensive guide in [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Monitoring and Observability
+
+- **CloudWatch Logs**: All Lambda invocations and API Gateway requests
+- **CloudWatch Metrics**: Lambda duration, errors, invocations
+- **API Gateway Metrics**: Request count, latency, errors
+- **Amplify Console**: Build logs and deployment status
+
+### Cost Optimization
+
+The architecture is designed for cost efficiency:
+
+- **Lambda**: Pay only for actual execution time
+- **API Gateway**: Pay per million API calls
+- **Amplify**: Free tier available for hosting
+- **Athena**: Pay per TB of data scanned
+- **S3**: Lifecycle policies for automatic cleanup
+
+Estimated monthly cost for moderate usage: $10-50 USD
+
+### Security Features
+
+- **IAM Roles**: Least-privilege access policies
+- **S3 Encryption**: At-rest encryption enabled
+- **API Security**: CORS configured, API Gateway throttling
+- **Secrets Management**: Sensitive values in environment variables
+- **VPC**: Optional VPC deployment for enhanced security
+
+### Technologies Used
+
+- **Frontend**: Angular 17, TypeScript, Angular Material, Chart.js
+- **Backend**: Python 3.11, Boto3, AWS Lambda
+- **Infrastructure**: Terraform, AWS (Lambda, API Gateway, Amplify, Athena, S3)
+- **CI/CD**: GitHub Actions
+- **ML**: Amazon SageMaker, scikit-learn
+
+---
+
+## Getting Started with Development
+
+### Frontend Development
+
+```bash
+cd frontend
+npm install
+npm start
+# Navigate to http://localhost:4200
+```
+
+### Lambda Development
+
+```bash
+cd lambda/anomaly_detection
+pip install -r requirements.txt
+# Test locally with sample events
+```
+
+### Terraform Development
+
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform validate
+```
+
+For more information, see:
+
+- [Frontend README](frontend/README.md)
+- [Lambda README](lambda/anomaly_detection/README.md)
+- [Deployment Guide](DEPLOYMENT.md)
+
+---
