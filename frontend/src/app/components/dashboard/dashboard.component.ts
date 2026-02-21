@@ -36,8 +36,11 @@ export class DashboardComponent implements OnChanges {
   stats: AnomalyStats | null = null;
   anomalyRecords: AnomalyResult[] = [];
   
-  // Info cards expand/collapse state
+  // Section expand/collapse states
   infoCardsExpanded = true;
+  architectureSectionExpanded = true;
+  chartsExpanded = true;
+  
   displayedColumns: string[] = [
     'record_id',
     'recipient_state',
@@ -197,6 +200,14 @@ export class DashboardComponent implements OnChanges {
 
   toggleInfoCards(): void {
     this.infoCardsExpanded = !this.infoCardsExpanded;
+  }
+
+  toggleArchitectureSection(): void {
+    this.architectureSectionExpanded = !this.architectureSectionExpanded;
+  }
+
+  toggleCharts(): void {
+    this.chartsExpanded = !this.chartsExpanded;
   }
 
   private processData(): void {

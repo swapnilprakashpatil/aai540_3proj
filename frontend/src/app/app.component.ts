@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AnomalyDetectionService } from './services/anomaly-detection.service';
 import { AnomalyResponse } from './models/anomaly.model';
@@ -16,6 +17,7 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
     MatProgressSpinnerModule,
     MatButtonModule,
     MatCardModule,
+    MatIconModule,
     MatSnackBarModule,
     DashboardComponent
   ],
@@ -70,6 +72,16 @@ export class AppComponent implements OnInit {
         this.showNotification('Error detecting anomalies. Please try again.', 'error');
       }
     });
+  }
+
+  /**
+   * Scroll to results section
+   */
+  scrollToResults(): void {
+    const element = document.getElementById('results-section');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   /**
