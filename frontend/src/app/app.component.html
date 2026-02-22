@@ -133,6 +133,14 @@
     <div *ngIf="loading" class="loading-container">
       <mat-spinner diameter="60"></mat-spinner>
       <p>Analyzing records and detecting anomalies...</p>
+
+      <div class="query-display" *ngIf="currentQuery">
+        <div class="query-header">
+          <mat-icon>search</mat-icon>
+          <span>Athena Query Executed:</span>
+        </div>
+        <pre class="query-content">{{ currentQuery }}</pre>
+      </div>
     </div>
   </main>
 </div>

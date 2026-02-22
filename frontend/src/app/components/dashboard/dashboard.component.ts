@@ -8,6 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTabsModule } from '@angular/material/tabs';
 import { NgChartsModule } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { AnomalyResponse, AnomalyResult, AnomalyStats } from '../../models/anomaly.model';
@@ -25,6 +26,7 @@ import { AnomalyResponse, AnomalyResult, AnomalyStats } from '../../models/anoma
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
+    MatTabsModule,
     NgChartsModule
   ],
   templateUrl: './dashboard.component.html',
