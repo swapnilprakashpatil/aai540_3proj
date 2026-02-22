@@ -757,9 +757,11 @@
               class="anomaly-table"
             >
               <ng-container matColumnDef="record_id">
-                <th mat-header-cell *matHeaderCellDef>Record ID</th>
+                <th mat-header-cell *matHeaderCellDef>Profile ID</th>
                 <td mat-cell *matCellDef="let record">
-                  {{ record.record.Record_ID }}
+                  {{
+                    record.record.Profile_ID || record.record.Record_ID || "N/A"
+                  }}
                 </td>
               </ng-container>
 
@@ -782,9 +784,9 @@
               </ng-container>
 
               <ng-container matColumnDef="payment_date">
-                <th mat-header-cell *matHeaderCellDef>Payment Date</th>
+                <th mat-header-cell *matHeaderCellDef>Payment Year</th>
                 <td mat-cell *matCellDef="let record">
-                  {{ formatDate(record.record.Date_of_Payment) }}
+                  {{ record.record.Payment_Year || "N/A" }}
                 </td>
               </ng-container>
 
@@ -792,7 +794,8 @@
                 <th mat-header-cell *matHeaderCellDef>Nature of Payment</th>
                 <td mat-cell *matCellDef="let record">
                   {{
-                    record.record.Nature_of_Payment_or_Transfer_of_Value ||
+                    record.record.Nature_of_Payment ||
+                      record.record.Nature_of_Payment_or_Transfer_of_Value ||
                       "N/A"
                   }}
                 </td>

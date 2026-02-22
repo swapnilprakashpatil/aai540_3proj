@@ -18,7 +18,7 @@ export class AnomalyDetectionService {
    * @param recordCount - Number of records to analyze (default: 10000)
    */
   detectAnomalies(recordCount: number = 10000): Observable<AnomalyResponse> {
-    return this.http.post<AnomalyResponse>(`${this.apiUrl}/detect`, {
+    return this.http.post<AnomalyResponse>(this.apiUrl, {
       record_count: recordCount
     }).pipe(
       catchError(this.handleError)

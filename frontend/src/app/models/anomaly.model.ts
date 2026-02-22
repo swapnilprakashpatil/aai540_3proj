@@ -1,12 +1,16 @@
 export interface PaymentRecord {
-  Record_ID: string;
-  Covered_Recipient_Type: string;
-  Recipient_State: string;
+  Profile_ID: string;
   Total_Amount_of_Payment_USDollars: number;
-  Date_of_Payment: string;
-  Form_of_Payment_or_Transfer_of_Value: string;
-  Nature_of_Payment_or_Transfer_of_Value: string;
-  Applicable_Manufacturer_or_Applicable_GPO_Making_Payment_Name: string;
+  Payment_Year: number;
+  Nature_of_Payment: string;
+  Recipient_State: string;
+  // Legacy fields for backwards compatibility
+  Record_ID?: string;
+  Date_of_Payment?: string;
+  Nature_of_Payment_or_Transfer_of_Value?: string;
+  Covered_Recipient_Type?: string;
+  Form_of_Payment_or_Transfer_of_Value?: string;
+  Applicable_Manufacturer_or_Applicable_GPO_Making_Payment_Name?: string;
   [key: string]: any;
 }
 
@@ -14,7 +18,8 @@ export interface AnomalyResult {
   record: PaymentRecord;
   anomaly_score: number;
   is_anomaly: boolean;
-  features: any;
+  confidence: number;
+  features?: any;
 }
 
 export interface AnomalyResponse {
