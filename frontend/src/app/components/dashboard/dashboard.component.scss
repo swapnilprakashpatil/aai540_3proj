@@ -127,16 +127,9 @@
   }
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dashFlow { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 10; } }
 
 .section-title {
   font-size: 1.5rem;
@@ -394,28 +387,8 @@
       background: rgba(59, 130, 246, 0.08);
       border: 1px solid rgba(59, 130, 246, 0.2);
       border-radius: 8px;
-
-      h4 {
-        color: #93c5fd;
-        margin: 0 0 0.75rem 0;
-        font-size: 1rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-
-        &:before {
-          content: "⚡";
-          font-size: 1.125rem;
-        }
-      }
-
-      p {
-        margin: 0;
-        color: #cbd5e1;
-        font-size: 0.9375rem;
-        line-height: 1.7;
-      }
+      h4 { color: #93c5fd; margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; &:before { content: "⚡"; font-size: 1.125rem; } }
+      p { margin: 0; color: #cbd5e1; font-size: 0.9375rem; line-height: 1.7; }
     }
 
     .objective-intro {
@@ -456,28 +429,8 @@
       background: rgba(59, 130, 246, 0.08);
       border: 1px solid rgba(59, 130, 246, 0.2);
       border-radius: 8px;
-
-      h4 {
-        color: #93c5fd;
-        font-size: 1rem;
-        font-weight: 600;
-        margin: 0 0 0.75rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-
-        &:before {
-          content: "🎯";
-          font-size: 1.125rem;
-        }
-      }
-
-      p {
-        margin: 0;
-        color: #cbd5e1;
-        font-size: 0.9375rem;
-        line-height: 1.7;
-      }
+      h4 { color: #93c5fd; font-size: 1rem; font-weight: 600; margin: 0 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; &:before { content: "🎯"; font-size: 1.125rem; } }
+      p { margin: 0; color: #cbd5e1; font-size: 0.9375rem; line-height: 1.7; }
     }
 
     .tech-category {
@@ -775,17 +728,6 @@
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -811,83 +753,6 @@
       height: 24px;
     }
   }
-}
-
-// Remove old card grid styles - keeping for backwards compatibility with other sections
-.info-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
-}
-
-.info-card {
-  background: #1e293b;
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    border-color: rgba(148, 163, 184, 0.2);
-  }
-
-  mat-card-header {
-    background: rgba(148, 163, 184, 0.05);
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-    border-radius: 8px 8px 0 0;
-
-    mat-card-title {
-      color: #f1f5f9;
-      font-size: 1.125rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.625rem;
-      margin: 0;
-    }
-  }
-
-  mat-card-content {
-    padding: 1.25rem;
-    color: #cbd5e1;
-    line-height: 1.6;
-
-    p {
-      margin-bottom: 1rem;
-      color: #94a3b8;
-    }
-
-    ul.feature-list {
-      list-style: none;
-      padding-left: 0;
-      
-      li {
-        padding: 0.5rem 0;
-        padding-left: 1.5rem;
-        position: relative;
-        color: #cbd5e1;
-
-        &:before {
-          content: "✓";
-          position: absolute;
-          left: 0;
-          color: #14b8a6;
-          font-weight: bold;
-          font-size: 1.125rem;
-        }
-      }
-    }
-  }
-}
-
-.card-icon {
-  font-size: 1.375rem !important;
-  color: #14b8a6;
-  width: 1.375rem !important;
-  height: 1.375rem !important;
 }
 
 // Stats Section
@@ -1295,35 +1160,13 @@
 
   // Connection lines
   .connection-line {
-    &.horizontal {
-      width: 80px;
-      height: 20px;
-      margin: 0 1rem;
-      flex-shrink: 0;
-      align-self: center;
-      
-      line {
-        stroke-dasharray: 5, 5;
-        animation: dashFlow 1s linear infinite;
-      }
+    line {
+      stroke-dasharray: 5, 5;
+      animation: dashFlow 1s linear infinite;
     }
-    
-    &.vertical {
-      width: 100%;
-      height: 60px;
-      margin: 1rem 0;
-      display: flex;
-      justify-content: center;
-      
-      line {
-        stroke-dasharray: 5, 5;
-        animation: dashFlow 1s linear infinite;
-      }
-    }
-    
-    .animated-line {
-      filter: drop-shadow(0 0 4px rgba(20, 184, 166, 0.4));
-    }
+    .animated-line { filter: drop-shadow(0 0 4px rgba(20, 184, 166, 0.4)); }
+    &.horizontal { width: 80px; height: 20px; margin: 0 1rem; flex-shrink: 0; align-self: center; }
+    &.vertical { width: 100%; height: 60px; margin: 1rem 0; display: flex; justify-content: center; }
   }
 
   // Layer-specific accents
@@ -1353,14 +1196,7 @@
   }
 }
 
-@keyframes dashFlow {
-  0% {
-    stroke-dashoffset: 0;
-  }
-  100% {
-    stroke-dashoffset: 10;
-  }
-}
+
 
 @media (max-width: 768px) {
   .stats-grid {
