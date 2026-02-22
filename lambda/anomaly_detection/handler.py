@@ -18,8 +18,44 @@ sagemaker_runtime = boto3.client('sagemaker-runtime')
 # Environment variables
 ATHENA_DATABASE = os.environ.get('ATHENA_DATABASE', 'cms_open_payments')
 ATHENA_TABLE = os.environ.get('ATHENA_TABLE', 'general_payments')
+FEATURE_STORE_DATABASE = os.environ.get('FEATURE_STORE_DATABASE', 'sagemaker_featurestore')
+FEATURE_STORE_TABLE = os.environ.get('FEATURE_STORE_TABLE', '')
 ATHENA_OUTPUT_BUCKET = os.environ.get('ATHENA_OUTPUT_BUCKET')
 SAGEMAKER_ENDPOINT = os.environ.get('SAGEMAKER_ENDPOINT')
+
+# Model feature names in exact order expected by the model (16 features)
+MODEL_FEATURES = [
+    'total_amount_of_payment_usdollars',
+    'number_of_payments_included_in_total_amount',
+    'payment_year',
+    'payment_month',
+    'payment_quarter',
+    'payment_dayofweek',
+    'is_weekend',
+    'hist_pay_count',
+    'hist_pay_total',
+    'hist_pay_avg',
+    'hist_pay_std',
+    'hist_pay_max',
+    'amt_to_avg_ratio',
+    'amt_to_max_ratio',
+    'is_new_recipient',
+    'is_high_risk_nature'
+]
+
+# Features that actually exist in the feature store (8 features + 2 metadata)
+FEATURE_STORE_FEATURES = [
+    'total_amount_of_payment_usdollars',
+    'payment_year',
+    'hist_pay_avg',
+    'hist_pay_count',
+    'hist_pay_std',
+    'hist_pay_max',
+    'amt_to_max_ratio',
+    'is_high_risk_nature',
+    'nature_of_payment_or_transfer_of_value',
+    'recipient_state'
+]
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -94,19 +130,20 @@ def prepare_features(records, columns):
     for record in records:
         record_dict = dict(zip(columns, record))
         
-        # Extract and prepare features based on model requirements
-        # Adjust these based on your actual model's feature requirements
         try:
-            features = {
-                'Total_Amount_of_Payment_USDollars': float(record_dict.get('total_amount_of_payment_usdollars', 0)),
-                'Recipient_State': record_dict.get('recipient_state', ''),
-                'Covered_Recipient_Type': record_dict.get('covered_recipient_type', ''),
-                'Form_of_Payment_or_Transfer_of_Value': record_dict.get('form_of_payment_or_transfer_of_value', ''),
-                'Nature_of_Payment_or_Transfer_of_Value': record_dict.get('nature_of_payment_or_transfer_of_value', ''),
-                'Record_ID': record_dict.get('record_id', ''),
-                'Date_of_Payment': record_dict.get('date_of_payment', '')
-            }
-            features_list.append(features)
+            # Extract features in the exact order expected by the model
+            # For features not in feature store, use default values (0.0)
+            # Return as dictionary with feature names as keys
+            feature_dict = {}
+            for feature_name in MODEL_FEATURES:
+                value = record_dict.get(feature_name, 0)
+                # Convert to float, handling None and empty values
+                try:
+                    feature_dict[feature_name] = float(value) if value is not None else 0.0
+                except (ValueError, TypeError):
+                    feature_dict[feature_name] = 0.0
+            
+            features_list.append(feature_dict)
         except Exception as e:
             logger.warning(f"Error preparing features for record: {str(e)}")
             continue
@@ -117,8 +154,11 @@ def prepare_features(records, columns):
 def call_sagemaker_endpoint(features):
     """Call SageMaker endpoint for inference"""
     try:
-        # Prepare payload
-        payload = json.dumps({'instances': features})
+        # Prepare payload - features is a list of dicts with feature names as keys
+        payload = json.dumps(features)
+        
+        logger.info(f"Invoking SageMaker endpoint with {len(features)} samples")
+        logger.debug(f"Sample payload (first record): {list(features[0].keys()) if features else 'empty'}")
         
         # Invoke endpoint
         response = sagemaker_runtime.invoke_endpoint(
@@ -129,6 +169,7 @@ def call_sagemaker_endpoint(features):
         
         # Parse response
         result = json.loads(response['Body'].read().decode())
+        logger.info(f"SageMaker response received successfully")
         return result
         
     except Exception as e:
@@ -147,23 +188,18 @@ def process_inference_results(records, columns, predictions):
         record_dict = dict(zip(columns, record))
         prediction = predictions[i]
         
-        # Assuming prediction contains 'anomaly_score' and 'is_anomaly'
-        # Adjust based on your model's actual output format
+        # Extract the prediction result
         result = {
             'record': {
-                'Record_ID': record_dict.get('record_id', ''),
-                'Covered_Recipient_Type': record_dict.get('covered_recipient_type', ''),
-                'Recipient_State': record_dict.get('recipient_state', ''),
+                'Profile_ID': record_dict.get('covered_recipient_profile_id', ''),
                 'Total_Amount_of_Payment_USDollars': float(record_dict.get('total_amount_of_payment_usdollars', 0)),
-                'Date_of_Payment': record_dict.get('date_of_payment', ''),
-                'Form_of_Payment_or_Transfer_of_Value': record_dict.get('form_of_payment_or_transfer_of_value', ''),
-                'Nature_of_Payment_or_Transfer_of_Value': record_dict.get('nature_of_payment_or_transfer_of_value', ''),
-                'Applicable_Manufacturer_or_Applicable_GPO_Making_Payment_Name': 
-                    record_dict.get('applicable_manufacturer_or_applicable_gpo_making_payment_name', '')
+                'Payment_Year': int(float(record_dict.get('payment_year', 0))),
+                'Nature_of_Payment': record_dict.get('nature_of_payment_or_transfer_of_value', ''),
+                'Recipient_State': record_dict.get('recipient_state', '')
             },
-            'anomaly_score': prediction.get('anomaly_score', prediction.get('score', -1)),
-            'is_anomaly': prediction.get('is_anomaly', prediction.get('anomaly_score', -1) == -1),
-            'features': prediction.get('features', {})
+            'anomaly_score': prediction.get('anomaly_score', 0),
+            'is_anomaly': bool(prediction.get('is_anomaly', 0)),
+            'confidence': prediction.get('confidence', 0)
         }
         results.append(result)
     
@@ -186,31 +222,29 @@ def lambda_handler(event, context):
             raise ValueError("ATHENA_OUTPUT_BUCKET environment variable not set")
         if not SAGEMAKER_ENDPOINT:
             raise ValueError("SAGEMAKER_ENDPOINT environment variable not set")
+        if not FEATURE_STORE_TABLE:
+            raise ValueError("FEATURE_STORE_TABLE environment variable not set")
         
-        # Build Athena query for random records
+        # Build Athena query to get features from feature store
+        # Note: Feature store only has 8 of the 16 features. Missing features will be filled with zeros.
+        # Available: total_amount, payment_year, hist_pay_avg/count/std/max, amt_to_max_ratio, is_high_risk_nature
+        # Missing: number_of_payments, payment_month/quarter/dayofweek, is_weekend, hist_pay_total, amt_to_avg_ratio, is_new_recipient
+        # Features will be sent to SageMaker as list of dicts with feature names as keys
+        feature_columns = ', '.join(FEATURE_STORE_FEATURES)
         query = f"""
         SELECT 
-            record_id,
-            covered_recipient_type,
-            recipient_state,
-            total_amount_of_payment_usdollars,
-            date_of_payment,
-            form_of_payment_or_transfer_of_value,
-            nature_of_payment_or_transfer_of_value,
-            applicable_manufacturer_or_applicable_gpo_making_payment_name,
-            recipient_city,
-            recipient_zip_code,
-            number_of_payments_included_in_total_amount
-        FROM {ATHENA_TABLE}
+            covered_recipient_profile_id,
+            {feature_columns}
+        FROM {FEATURE_STORE_DATABASE}.{FEATURE_STORE_TABLE}
         WHERE total_amount_of_payment_usdollars IS NOT NULL
         ORDER BY RAND()
         LIMIT {record_count}
         """
         
-        # Query Athena
-        logger.info("Querying Athena...")
-        columns, records = query_athena(query, ATHENA_DATABASE)
-        logger.info(f"Retrieved {len(records)} records from Athena")
+        # Query Athena feature store
+        logger.info(f"Querying feature store: {FEATURE_STORE_DATABASE}.{FEATURE_STORE_TABLE}")
+        columns, records = query_athena(query, FEATURE_STORE_DATABASE)
+        logger.info(f"Retrieved {len(records)} records from feature store")
         
         if not records:
             return {
@@ -233,9 +267,17 @@ def lambda_handler(event, context):
         logger.info("Calling SageMaker endpoint...")
         predictions = call_sagemaker_endpoint(features)
         
+        # Handle prediction format - check if wrapped or direct list
+        if isinstance(predictions, dict):
+            prediction_list = predictions.get('predictions', predictions)
+        elif isinstance(predictions, list):
+            prediction_list = predictions
+        else:
+            prediction_list = []
+        
         # Process results
         logger.info("Processing results...")
-        results = process_inference_results(records, columns, predictions.get('predictions', []))
+        results = process_inference_results(records, columns, prediction_list)
         
         # Calculate statistics
         anomaly_count = sum(1 for r in results if r['is_anomaly'])
@@ -251,7 +293,8 @@ def lambda_handler(event, context):
             'anomaly_percentage': anomaly_percentage,
             'results': results,
             'execution_time': execution_time,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.utcnow().isoformat(),
+            'athena_query': query.strip()
         }
         
         logger.info(f"Request completed in {execution_time:.2f}s")

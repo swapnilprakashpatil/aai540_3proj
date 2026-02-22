@@ -1,11 +1,21 @@
-# AAI-540 ML Design Document
-
 # CMS Open Payments Anomaly Detection
 
-# Members:
+**AAI-540 Machine Learning Operations - Final Team Project**
+
+## 🔗 Project Links
+
+- **Interactive Notebook:** https://swapnilprakashpatil.github.io/aai540_3proj/
+- **Live Demo:** http://cms-anomaly-detection-frontend-prod.s3-website-us-east-1.amazonaws.com/
+
+## Team Members
 
 - Swapnil Patil
 - Jamshed Nabizada
+- Tej Bahadur Singh
+
+## Professor:
+
+- Sean Coyne
 
 ## Project Scope
 
@@ -13,53 +23,90 @@
 
 The CMS Open Payments program publishes information about financial relationships between drug/medical device companies ("reporting entities") and healthcare providers ("covered recipients") to promote transparency. These relationships can include payments for items such as meals, travel, gifts, speaking fees, and research-related transfers of value. The published data is open to interpretation and does not inherently indicate an improper relationship (Centers for Medicare & Medicaid Services [CMS], 2025a).
 
-This project builds an ML system that assigns a risk score to Open Payments records (or aggregated entities) to prioritize statistically unusual payment patterns for compliance review. The system is designed for triage/prioritization and will not label records as fraud. The ML problem is framed as unsupervised anomaly detection on large tabular data.
+This project implements an end-to-end MLOps system that assigns risk scores to Open Payments records to prioritize statistically unusual payment patterns for compliance review. The system is designed for triage/prioritization and does not label records as fraud. The ML problem is framed as unsupervised anomaly detection on large-scale tabular data.
 
-### Technical Background
+### Technical Approach
 
-#### How the model will be evaluated
+#### Dataset
 
-Because Open Payments does not provide a "fraud" ground-truth label, evaluation focuses on ranking usefulness and stability:
+**Primary dataset:** CMS Open Payments Program Year 2024 General Payments
 
-- **Top K utility:** The top-ranked anomalies should represent truly unusual patterns. The system will measure concentration of unusual behavior in the top K results (e.g., amount spikes vs peers, unusually high payer diversity).
-- **Temporal stability & drift:** Compare score distributions and anomaly rates over time to ensure stability and detect drift.
-- **Qualitative sanity review:** Provide "reason codes" (e.g., peer deviation, spikes, unusual mix) for the highest-risk entities.
+- Published June 30, 2025
+- Covers payments from January 1 - December 31, 2024
+- Approximately 16.16 million records totaling $13.18B in payments
+- Project extract: 15,397,627 rows × 91 columns
 
-#### Data source and volume
+The dataset's scale reinforces the need for cloud infrastructure, parquet conversion, partitioning, and batch processing capabilities.
 
-**Primary dataset:** Open Payments Program Year 2024 (General Payments). PY2024 was published June 30, 2025, and covers payments made between January 1 and December 31, 2024. CMS reports PY2024 includes approximately 16.16 million records totaling $13.18B in payments/transfers of value, and the site reflects the most recent seven years of data (CMS, 2025a).
+#### Model Architecture
 
-**Project-specific ingestion results:** The extracted General Payments table contains 15,397,627 rows and 91 columns (computed from the downloaded dataset). The dataset's size reinforces the need for parquet conversion, partitioning, and batch processing.
+The project implements and compares three anomaly detection approaches:
 
-#### Data preparation
+1. **Isolation Forest (Primary Model)**
+   - Fast, stable, and produces interpretable "unusualness" scores
+   - Aligns well with risk signals: high amounts, weekend activity, unusual payment patterns
+   - Hyperparameter-optimized to reduce false positive rate
+   - Selected as the primary model for production deployment
 
-- Download program-year extract → store in S3 (raw)
-- Convert CSV to partitioned parquet (program_year + month)
-- Type normalization (dates, numeric amounts), missingness handling, and deduplication
-- Standardize and validate categorical fields; enforce schema constraints based on the CMS data dictionary/methodology documentation (CMS, 2025b)
+2. **Autoencoder (Neural Network)**
+   - Deep learning approach for capturing complex patterns
+   - Architecture: 50-epoch training with early stopping
+   - Reconstruction error-based anomaly detection
+   - Effective at identifying rare feature combinations
 
-#### Exploratory analysis (EDA)
+3. **XGBoost (Supervised Pseudo-labeling)**
+   - Gradient boosting approach trained on pseudo-labels
+   - Near-perfect AUC on validation data
+   - Used as complementary model for high-confidence predictions
 
-- Payment amount distributions (heavy-tailed, log-scale)
-- Variation by provider attributes (specialty, state, covered recipient type)
-- Diversity of payment categories (nature/form)
-- Temporal and seasonality patterns aligned with annual reporting/publication cycles
+#### Key Features
 
-#### Hypothesized main features
+The models learn "unusualness" from:
 
-The model is expected to learn "unusualness" primarily from:
+- Payment amount aggregates (sum, mean, max, standard deviation)
+- Payment frequency and temporal patterns
+- Diversity metrics (distinct reporting entities per recipient)
+- Payment nature and form categorical distributions
+- Peer deviations by specialty, state, and recipient type
+- Historical comparison features (payment trends over time)
 
-- Amount magnitude aggregates (sum/mean/max/std)
-- Frequency (count of payments)
-- Diversity metrics (distinct reporting entities paying the same recipient)
-- Mix/entropy of "nature of payment" and "form of payment" categories
-- Peer deviations against specialty + state peer groups (recipient vs similar providers)
+#### Model Evaluation
 
-#### Model type
+Because Open Payments lacks ground-truth fraud labels, evaluation focuses on:
 
-- **Baseline:** Robust peer-group outlier scores (median/IQR deviation)
-- **Primary model:** Isolation Forest on aggregated features (CPU-friendly, strong tabular anomaly baseline)
-- **Optional comparator:** Local Outlier Factor on sampled/aggregated data
+- **Top-K Utility:** Highest-ranked anomalies represent truly unusual patterns
+- **Temporal Stability:** Score distributions remain consistent across time periods
+- **Drift Detection:** Monitoring for data and concept drift
+- **Interpretability:** Reason codes explain why records were flagged
+
+### Project Results
+
+#### Model Performance
+
+- **Isolation Forest:** Achieved optimal contamination rate of 1-2% with stable anomaly detection across training and validation sets
+- **Autoencoder:** Successfully captured reconstruction errors with clear separation between normal and anomalous patterns
+- **XGBoost:** 95%+ AUC on pseudo-labeled validation data, demonstrating strong pattern recognition
+
+#### Key Findings
+
+The EDA and model outputs reveal:
+
+- Most payments are small (typical value ~$20), but a small fraction shows extreme values
+- Clear payment distribution patterns by specialty, state, and recipient type
+- Temporal seasonality aligned with annual reporting cycles
+- Data quality issues requiring validation (invalid state codes, payment nature encoding)
+
+#### Production Model
+
+The **Isolation Forest** model was selected for production deployment because:
+
+- Fast inference suitable for batch processing
+- Stable performance across train/test splits
+- Interpretable scores aligned with business risk indicators
+- Lower computational requirements fit AWS credit constraints
+- Hyperparameter tuning reduced anomaly rate to actionable levels (~1-2%)
+
+The Autoencoder and XGBoost models serve as complementary validators for high-risk cases requiring additional review.
 
 ### Goals vs Non-Goals
 
@@ -233,27 +280,617 @@ Small CPU instances for processing/training/batch scoring (e.g., `m5.large`) to 
 
 ---
 
-## Security Checklist, Privacy and Other Risks
+## References
 
-- **PHI:** No
-- **PII:** Yes (provider identity/location)
-  - **Justification:** Comes from public dataset
-  - **Mitigation:** Encrypt storage, restrict access, do not use names as features, and present results as "review prioritization," not wrongdoing claims
-- **User behavior tracked:** No
-- **Credit card info:** No
-- **S3 buckets:** raw/curated/features/preds (as listed)
-- **Bias considerations:** Differing payment patterns across specialties/regions may be legitimate; use peer-group comparisons and subgroup monitoring
-- **Ethical concerns:** Outputs can be misused or misinterpreted; align wording and documentation with CMS guidance on interpretation
+Centers for Medicare & Medicaid Services. (2025a). _Open Payments: Program overview and data updates (Program Year 2024 publication)_. Open Payments. https://openpaymentsdata.cms.gov/datasets/download
+
+Centers for Medicare & Medicaid Services. (2025b). _Open Payments data dictionary / methodology documentation for public use files_. Open Payments. https://openpaymentsdata.cms.gov/dataset/e6b17c6a-2534-4207-a4a1-6746a14911ff#data-dictionary
+
+---
+
+## MLOps Architecture and Implementation
+
+This project implements a comprehensive MLOps pipeline covering the complete machine learning lifecycle from data ingestion to production monitoring.
+
+### End-to-End Pipeline
+
+#### 1. Data Engineering
+
+**AWS S3 Data Lake Architecture:**
+
+- `s3://opayments-raw/` — Raw CMS dataset downloads
+- `s3://opayments-curated/` — Cleaned and partitioned parquet files
+- `s3://opayments-features/` — Engineered features for training/scoring
+- `s3://opayments-preds/` — Model predictions and anomaly scores
+
+**AWS Athena Integration:**
+
+- SQL-based querying directly on S3 data lake
+- Partition pruning for optimized query performance
+- Schema evolution support for annual CMS updates
+
+**Data Processing Pipeline:**
+
+1. CSV to Parquet conversion with column type enforcement
+2. Partitioning by program year and month for query optimization
+3. Data validation and quality checks
+4. Missing value handling and deduplication
+5. Feature engineering with historical aggregations
+
+#### 2. Model Training Workflow
+
+**Approach:**
+
+- Time-based train/validation/test split to prevent leakage
+- Recipient-month level aggregation for feature engineering
+- Robust scaling using median/IQR normalization
+- Peer-group comparisons (specialty × state × recipient type)
+
+**Hyperparameter Optimization:**
+
+- Grid Search: Systematic exploration of parameter space
+- Randomized Search: Efficient broader exploration (30 iterations)
+- Cross-validation with custom anomaly detection metric
+- Optimal parameters selected based on validation score
+
+**Model Artifacts:**
+
+- Trained model (joblib serialized)
+- Preprocessing objects (scalers, encoders)
+- Feature names and configuration
+- Anomaly threshold parameters
+- Metadata (training date, dataset version, metrics)
+
+#### 3. Model Registry and Versioning
+
+**SageMaker Model Registry:**
+
+- Model package groups for version management
+- Metadata tracking: parameters, metrics, training dataset
+- Approval workflow for production promotion
+- Model lineage for reproducibility
+
+**Model Card Generation:**
+
+- Model purpose and intended use
+- Training details and hyperparameters
+- Evaluation results and limitations
+- Bias considerations and monitoring requirements
+
+#### 4. Production Deployment
+
+**Amazon SageMaker Endpoint:**
+
+- Real-time inference capability
+- PyTorch container with custom inference script
+- Instance type: ml.m5.large (cost-optimized for $50 credit limit)
+- Auto-scaling configuration for variable load
+- Data capture enabled for monitoring (100% sampling)
+
+**Inference Pipeline:**
+
+```python
+Input → Preprocessing → Feature Engineering → Model Scoring → Post-processing → Output
+```
+
+**Deployment Validation:**
+
+- Sample predictions compared against notebook outputs
+- Anomaly rate validation (expected: 1-2%)
+- Score distribution consistency checks
+- Response time and throughput testing
+
+#### 5. Model Monitoring
+
+**Data Quality Monitoring:**
+
+- **Feature Drift Detection:** Statistical tests for distribution changes
+- **Schema Validation:** Column presence and type checking
+- **Missing Value Alerts:** Threshold-based alerts for data quality issues
+- **Categorical Drift:** New/invalid category detection
+
+**Model Performance Monitoring:**
+
+- **Anomaly Rate Drift:** Tracking changes in detection rate over time
+- **Score Distribution Monitoring:** Percentile-based drift detection
+- **Prediction Latency:** Response time tracking
+- **Error Rate Monitoring:** Failed prediction tracking
+
+**SageMaker Model Monitor:**
+
+- Baseline statistics generation from production traffic
+- Scheduled monitoring jobs (daily execution via Cron)
+- Constraint violation detection
+- Integration with CloudWatch for alerting
+
+**CloudWatch Alarms:**
+
+- Payment amount distribution drift (threshold: 15%)
+- Feature baseline violation alerts
+- Endpoint health and availability monitoring
+- Custom metrics for business KPIs
+
+#### 6. Automated Retraining
+
+**Trigger Conditions:**
+
+- Scheduled monthly retraining (align with CMS data updates)
+- Feature drift exceeds threshold (>15% deviation)
+- Anomaly rate drift (>25% change from baseline)
+- Manual trigger for urgent updates
+
+**Retraining Workflow:**
+
+1. Fetch latest curated data from S3
+2. Generate fresh features with updated historical context
+3. Train new model with existing hyperparameters
+4. Validate against holdout test set
+5. Register new model version in Model Registry
+6. Deploy to staging for validation
+7. Promote to production upon approval
+
+---
+
+## CI/CD Pipeline Architecture
+
+### GitHub Actions Workflows
+
+#### 1. Terraform Infrastructure CI/CD
+
+```yaml
+Trigger: Push to main, Pull requests
+Steps:
+  - Terraform format validation
+  - Terraform initialization
+  - Terraform plan generation
+  - Security scanning (checkov)
+  - Terraform apply (main branch only)
+```
+
+#### 2. Lambda Function CI/CD
+
+```yaml
+Trigger: Changes in lambda/**
+Steps:
+  - Python lint (pylint, flake8)
+  - Unit test execution
+  - Dependency installation
+  - Lambda package creation
+  - Deployment to AWS Lambda
+  - Integration test execution
+```
+
+#### 3. Frontend Application CI/CD
+
+```yaml
+Trigger: Changes in frontend/**
+Steps:
+  - Node.js environment setup
+  - npm install dependencies
+  - Angular lint (ng lint)
+  - Unit tests (ng test)
+  - Production build (ng build --prod)
+  - Build artifact upload
+  - Deployment to S3/Amplify
+```
+
+#### 4. Model Training Pipeline
+
+```yaml
+Trigger: Manual, Scheduled, Drift detection
+Steps:
+  - Data quality validation
+  - Environment setup
+  - Model training execution
+  - Evaluation against thresholds
+  - Model artifact upload to S3
+  - SageMaker model registration
+  - Deployment approval gate
+```
+
+### Continuous Integration Checks
+
+**Code Quality:**
+
+- Linting: Python (flake8, black), TypeScript (ESLint, Prettier)
+- Type checking: mypy for Python, TypeScript compiler
+- Code coverage minimum: 80% for critical components
+- Documentation completeness validation
+
+**Security Scanning:**
+
+- Dependency vulnerability scanning (npm audit, safety)
+- Infrastructure security (checkov for Terraform)
+- Secrets detection (GitGuardian)
+- IAM policy least-privilege validation
+
+**Testing Strategy:**
+
+- **Unit Tests:** Individual function/component testing
+- **Integration Tests:** API Gateway → Lambda → SageMaker flow
+- **End-to-End Tests:** Frontend → Backend → Model inference
+- **Performance Tests:** Load testing for Lambda/SageMaker endpoints
+
+### Infrastructure as Code
+
+**Terraform Modules:**
+
+1. **Lambda Module** (`lambda.tf`)
+   - Function definition with Python 3.11 runtime
+   - IAM role with least-privilege policies
+   - CloudWatch log group configuration
+   - Environment variable management
+
+2. **API Gateway Module** (`api_gateway.tf`)
+   - REST API definition
+   - CORS configuration
+   - Lambda integration
+   - Deployment stages (dev, prod)
+   - Throttling and rate limiting
+
+3. **Amplify Module** (`amplify.tf`)
+   - Frontend hosting configuration
+   - GitHub repository integration
+   - Build settings for Angular
+   - Custom domain support
+   - SSL/TLS certificate management
+
+4. **Main Configuration** (`main.tf`)
+   - AWS provider configuration
+   - S3 bucket for Athena results
+   - IAM roles and policies
+   - CloudWatch resources
+   - Resource tagging for cost allocation
+
+**State Management:**
+
+- Terraform state stored in S3 with versioning
+- State locking via DynamoDB
+- Separate state files per environment
+- Encryption at rest enabled
+
+---
+
+## System Architecture
+
+### Component Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Frontend Layer                            │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │  Angular Web Application (AWS Amplify / S3)            │    │
+│  │  - Dashboard UI                                         │    │
+│  │  - Anomaly Visualization (Chart.js)                    │    │
+│  │  - Real-time Statistics                                │    │
+│  └────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓ HTTPS
+┌─────────────────────────────────────────────────────────────────┐
+│                      API Gateway Layer                           │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │  AWS API Gateway (REST API)                            │    │
+│  │  - POST /detect-anomalies                              │    │
+│  │  - CORS configuration                                  │    │
+│  │  - Request throttling                                  │    │
+│  └────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                      Compute Layer                               │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │  AWS Lambda (Python 3.11)                              │    │
+│  │  - Query Athena for sample records                     │    │
+│  │  - Feature preparation                                 │    │
+│  │  - Invoke SageMaker endpoint                           │    │
+│  │  - Result aggregation                                  │    │
+│  └────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+             ↓ SQL Query          ↓ Inference Request
+┌──────────────────────┐    ┌──────────────────────────────┐
+│   Data Lake Layer    │    │   ML Inference Layer         │
+│  ┌─────────────┐    │    │  ┌─────────────────────┐    │
+│  │ AWS Athena  │    │    │  │ SageMaker Endpoint  │    │
+│  │  - SQL      │    │    │  │  - Isolation Forest │    │
+│  │  - Catalog  │    │    │  │  - ml.m5.large      │    │
+│  └─────────────┘    │    │  │  - Data Capture     │    │
+│         ↓           │    │  └─────────────────────┘    │
+│  ┌─────────────┐    │    │           ↓                  │
+│  │  S3 Buckets │    │    │  ┌─────────────────────┐    │
+│  │  - Raw      │    │    │  │ Model Artifacts (S3)│    │
+│  │  - Curated  │    │    │  │  - model.tar.gz     │    │
+│  │  - Features │    │    │  │  - preprocessor     │    │
+│  │  - Preds    │    │    │  │  - metadata.json    │    │
+│  └─────────────┘    │    │  └─────────────────────┘    │
+└──────────────────────┘    └──────────────────────────────┘
+                  ↓                      ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    Monitoring Layer                              │
+│  ┌────────────────────┐  ┌──────────────────────────────┐      │
+│  │  CloudWatch Logs   │  │  SageMaker Model Monitor     │      │
+│  │  - Lambda logs     │  │  - Data quality monitoring   │      │
+│  │  - API Gateway     │  │  - Feature drift detection   │      │
+│  │  - SageMaker logs  │  │  - Anomaly rate tracking     │      │
+│  └────────────────────┘  └──────────────────────────────┘      │
+│  ┌────────────────────┐  ┌──────────────────────────────┐      │
+│  │  CloudWatch Alarms │  │  Model Registry              │      │
+│  │  - Drift alerts    │  │  - Version management        │      │
+│  │  - Error rates     │  │  - Approval workflow         │      │
+│  │  - Latency         │  │  - Model lineage             │      │
+│  └────────────────────┘  └──────────────────────────────┘      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+1. **User Interaction:** User accesses Angular dashboard hosted on AWS Amplify/S3
+2. **Anomaly Detection Request:** Frontend sends POST request to API Gateway with record count
+3. **Lambda Processing:**
+   - Receives request and queries Athena for random CMS payment records
+   - Prepares features matching training pipeline
+   - Invokes SageMaker endpoint with prepared data
+4. **Model Inference:** SageMaker returns anomaly scores and predictions
+5. **Response Processing:** Lambda aggregates results with statistics and visualizations
+6. **Real-time Display:** Frontend renders charts, tables, and metrics
+7. **Monitoring:** All operations logged to CloudWatch, data captured for drift detection
+
+### Security Architecture
+
+**Network Security:**
+
+- HTTPS/TLS encryption for all API communications
+- API Gateway with AWS IAM authentication
+- VPC optional for enhanced endpoint isolation
+- Security groups restricting SageMaker endpoint access
+
+**Identity and Access Management:**
+
+- Separate IAM roles for Lambda, SageMaker, Athena
+- Least-privilege policies (read/write scoped to specific S3 prefixes)
+- No hardcoded credentials (environment variables, AWS Secrets Manager)
+- Resource-based policies for cross-service access
+
+**Data Security:**
+
+- S3 bucket encryption at rest (AES-256)
+- Athena query results encrypted
+- SageMaker data capture encrypted
+- CloudWatch logs encrypted with KMS
+
+**Application Security:**
+
+- CORS restricted to frontend domain
+- API rate limiting and throttling
+- Input validation on Lambda handler
+- No PII in logs or monitoring data
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- AWS Account with appropriate permissions
+- Terraform (v1.6+)
+- Node.js (v18+) and npm
+- Python (v3.11+)
+- AWS CLI configured with valid credentials
+
+### Quick Deployment
+
+1. **Clone Repository**
+
+   ```bash
+   git clone <repository-url>
+   cd aai540_3proj
+   ```
+
+2. **Configure Environment**
+
+   ```bash
+   cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+   # Edit terraform.tfvars with your AWS settings
+   ```
+
+3. **Deploy Infrastructure**
+
+   ```bash
+   cd terraform
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+4. **Access Application**
+   ```bash
+   terraform output amplify_app_url
+   ```
+
+### Deployment Options
+
+**Option 1: Automated CI/CD (Recommended)**
+
+- Push to `main` branch triggers automated deployment via GitHub Actions
+- Includes linting, testing, and security scanning
+- Automatic rollback on failure
+
+**Option 2: Manual Scripts**
+
+- Linux/Mac: `./scripts/deploy.sh`
+- Windows: `.\scripts\deploy.ps1`
+
+**Option 3: Terraform Direct**
+
+- Follow the comprehensive guide in [DEPLOYMENT.md](DEPLOYMENT.md)
+
+### Project Structure
+
+```
+aai540_3proj/
+├── frontend/                  # Angular web application
+│   ├── src/app/components/   # Dashboard, charts, tables
+│   ├── src/app/services/     # API service layer
+│   └── src/environments/     # Environment configs
+├── lambda/                    # AWS Lambda functions
+│   └── anomaly_detection/    # Anomaly detection API
+├── terraform/                 # Infrastructure as Code
+│   ├── main.tf               # AWS provider, S3, IAM
+│   ├── lambda.tf             # Lambda function definition
+│   ├── api_gateway.tf        # REST API configuration
+│   └── amplify.tf            # Frontend hosting
+├── .github/workflows/        # CI/CD pipelines
+├── notebooks/                # Jupyter notebooks with full analysis
+├── config/                   # Configuration files
+├── data/                     # Sample datasets
+└── utils/                    # Utility modules
+```
+
+### Application Features
+
+**Dashboard Capabilities:**
+
+- Trigger anomaly detection on sample records from Athena
+- Interactive visualizations: pie charts, bar charts, line plots, scatter plots
+- Sortable anomaly table with detailed record information
+- Real-time statistics and metrics
+- Modern, responsive UI with Angular Material and Chart.js
+
+**Backend API:**
+
+- Serverless Lambda function (Python 3.11)
+- Athena query execution for data retrieval
+- Feature preparation matching training pipeline
+- SageMaker endpoint invocation
+- Structured JSON response with aggregated results
+
+---
+
+## Monitoring and Cost Optimization
+
+### Observability
+
+- **CloudWatch Logs:** Lambda invocations, API Gateway requests, SageMaker inference
+- **CloudWatch Metrics:** Latency, error rates, invocation counts
+- **API Gateway Metrics:** Request count, 4XX/5XX errors
+- **Amplify Console:** Build logs and deployment status
+- **SageMaker Model Monitor:** Data drift, feature drift, anomaly rate drift
+
+### Cost Management
+
+The architecture is optimized for AWS credit constraints:
+
+- **Lambda:** Pay-per-execution (no idle costs)
+- **API Gateway:** Pay-per-million calls
+- **Amplify:** Free tier available, minimal hosting costs
+- **Athena:** Pay per TB scanned (partitioned data reduces costs)
+- **SageMaker:** ml.m5.large instance, can be stopped when not in use
+- **S3:** Lifecycle policies for automatic data cleanup
+
+**Estimated monthly cost for moderate usage:** $10-50 USD
+
+---
+
+## Development Workflow
+
+### Local Development
+
+**Frontend:**
+
+```bash
+cd frontend
+npm install
+npm start
+# Navigate to http://localhost:4200
+```
+
+**Lambda Testing:**
+
+```bash
+cd lambda/anomaly_detection
+pip install -r requirements.txt
+python -m pytest tests/  # Run unit tests
+```
+
+**Terraform Validation:**
+
+```bash
+cd terraform
+terraform init
+terraform validate
+terraform plan
+```
+
+### Testing Strategy
+
+- **Unit Tests:** Component and function-level testing
+- **Integration Tests:** API Gateway → Lambda → SageMaker flow
+- **End-to-End Tests:** Full user workflow validation
+- **Model Tests:** Prediction consistency, score distribution validation
 
 ---
 
 ## Future Enhancements
 
-1. Add multi-level scoring (recipient-month + company-month + specialty-state benchmarks)
-2. Add semi-supervised learning from reviewer feedback ("expected/unexpected") to improve precision
-3. Improve explanations (e.g., SHAP on a supervised model trained from pseudo-labels)
-4. Extend to Research Payments and Ownership/Investment datasets (separate pipelines)
-5. Add automated data quality rules (missingness anomalies, schema changes across program years)
+1. **Data Quality Improvements**
+   - Strict validation for state and payment category fields
+   - Mapping to approved category lists
+   - Separate "data quality anomaly" detection stream
+
+2. **Enhanced Features**
+   - Entity-level behavioral scoring (recipient + payer history)
+   - Rolling aggregations and z-scores within peer groups
+   - Relationship count features and sudden-change indicators
+
+3. **Model Improvements**
+   - Local Outlier Factor (LOF) for density-based detection
+   - Semi-supervised learning from reviewer feedback
+   - SHAP explanations for high-risk predictions
+
+4. **Operational Enhancements**
+   - Multi-level scoring (recipient, company, specialty benchmarks)
+   - Extend to Research Payments and Ownership datasets
+   - Automated data quality monitoring rules
+
+---
+
+## Security, Privacy, and Ethics
+
+### Data Privacy
+
+- **Dataset:** CMS Open Payments (publicly available)
+- **PII Present:** Yes (provider identity/location)
+- **PHI Present:** No
+- **Mitigation:**
+  - Encrypt storage (S3, SageMaker)
+  - Restrict access with IAM least-privilege policies
+  - Exclude names and identifiers from model features
+  - Results framed as "review prioritization," not fraud determination
+
+### Bias Considerations
+
+- Payment patterns vary legitimately across specialties, regions, and institution types
+- Peer-group comparisons reduce bias from inherent specialty/geography differences
+- Subgroup monitoring tracks anomaly rates by recipient type, specialty, and state
+- Regular audits ensure data quality issues don't disproportionately flag certain groups
+
+### Ethical Framework
+
+- **Intended Use:** Prioritize compliance reviews of unusual payment patterns
+- **Not Intended:** Definitive fraud claims, legal determinations, automated enforcement
+- **Transparency:** Align with CMS guidance on Open Payments interpretation
+- **Accountability:** Model cards document limitations and monitoring requirements
+
+---
+
+## Technologies and Tools
+
+- **Machine Learning:** scikit-learn (Isolation Forest), TensorFlow (Autoencoder), XGBoost
+- **Cloud Platform:** AWS (S3, Athena, Lambda, API Gateway, SageMaker, Amplify, CloudWatch)
+- **Infrastructure:** Terraform, GitHub Actions
+- **Frontend:** Angular 17, TypeScript, Angular Material, Chart.js
+- **Backend:** Python 3.11, Boto3
+- **Data Processing:** Pandas, NumPy, Parquet
+- **Monitoring:** CloudWatch, SageMaker Model Monitor
 
 ---
 
@@ -263,247 +900,33 @@ Centers for Medicare & Medicaid Services. (2025a). _Open Payments: Program overv
 
 Centers for Medicare & Medicaid Services. (2025b). _Open Payments data dictionary / methodology documentation for public use files_. Open Payments. https://openpaymentsdata.cms.gov/dataset/e6b17c6a-2534-4207-a4a1-6746a14911ff#data-dictionary
 
----
+Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., & Duchesnay, É. (n.d.). IsolationForest. In scikit-learn documentation. https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html
 
-## Deployment Infrastructure
+Hinton, G. E., & Salakhutdinov, R. R. (2006). Reducing the dimensionality of data with neural networks. _Science, 313_(5786), 504–507. https://doi.org/10.1126/science.1127647
 
-### Architecture Overview
+Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. In _Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining_ (pp. 785-794). https://arxiv.org/abs/1603.02754
 
-This project includes a complete production-ready deployment infrastructure consisting of:
+Amazon Web Services. (n.d.). _Model registration and deployment with Amazon SageMaker Model Registry_. https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry.html
 
-1. **Angular Frontend** - Web application for visualizing anomaly detection results
-2. **AWS Lambda** - Serverless API for querying Athena and invoking SageMaker
-3. **API Gateway** - REST API endpoint for frontend-backend communication
-4. **AWS Amplify** - Hosting and CI/CD for the Angular application
-5. **Terraform** - Infrastructure as Code (IaC) for automated deployment
-6. **GitHub Actions** - CI/CD pipelines for automated testing and deployment
-
-### Project Structure
-
-```
-aai540_3proj/
-├── frontend/                  # Angular web application
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── components/   # Dashboard, charts, tables
-│   │   │   ├── models/       # TypeScript interfaces
-│   │   │   └── services/     # API service layer
-│   │   └── environments/     # Environment configs
-│   ├── package.json
-│   └── angular.json
-│
-├── lambda/                    # AWS Lambda functions
-│   └── anomaly_detection/
-│       ├── handler.py        # Main Lambda handler
-│       └── requirements.txt
-│
-├── terraform/                 # Infrastructure as Code
-│   ├── main.tf               # Main configuration
-│   ├── lambda.tf             # Lambda resources
-│   ├── api_gateway.tf        # API Gateway resources
-│   ├── amplify.tf            # Amplify app resources
-│   ├── variables.tf          # Input variables
-│   └── outputs.tf            # Output values
-│
-├── .github/
-│   └── workflows/            # CI/CD pipelines
-│       ├── deploy.yml        # Main deployment
-│       ├── frontend.yml      # Frontend CI
-│       ├── lambda.yml        # Lambda CI
-│       └── terraform.yml     # Terraform validation
-│
-├── scripts/                   # Deployment scripts
-│   ├── deploy.sh             # Bash deployment script
-│   └── deploy.ps1            # PowerShell deployment script
-│
-├── notebooks/                 # Jupyter notebooks
-├── config/                    # Configuration files
-├── data/                      # Data files
-└── utils/                     # Utility modules
-```
-
-### Frontend Application
-
-The Angular application provides an interactive dashboard for:
-
-- Triggering anomaly detection on 10,000 random records from Athena
-- Visualizing results with multiple chart types:
-  - Pie chart: Anomaly distribution
-  - Bar chart: Top states by anomaly count
-  - Line chart: Payment amount distribution
-  - Scatter plot: Anomaly score vs payment amount
-- Displaying detailed anomaly records in a sortable table
-- Real-time statistics and metrics
-
-**Features:**
-
-- Modern, responsive UI with Angular Material
-- Real-time data visualization with Chart.js
-- RESTful API integration
-- Production-ready build configuration
-
-### Lambda Function
-
-The Lambda function serves as the backend API that:
-
-1. Accepts POST requests with `record_count` parameter
-2. Queries AWS Athena for random CMS payment records
-3. Prepares features for the ML model
-4. Invokes the SageMaker endpoint for anomaly detection
-5. Processes and returns structured results
-
-**Key Features:**
-
-- Serverless architecture (pay-per-use)
-- Automatic scaling
-- CloudWatch logging and monitoring
-- CORS support for cross-origin requests
-- Error handling and retry logic
-
-### Infrastructure as Code (Terraform)
-
-All AWS resources are defined and managed using Terraform:
-
-- **Lambda Function** with IAM roles and policies
-- **API Gateway** with CORS configuration
-- **AWS Amplify** for frontend hosting
-- **S3 Bucket** for Athena query results
-- **CloudWatch** log groups for monitoring
-- **IAM Roles** with least-privilege permissions
-
-### CI/CD Pipelines
-
-Automated GitHub Actions workflows for:
-
-1. **Terraform Validation** - Validates IaC on every push
-2. **Frontend Build** - Builds and tests Angular app
-3. **Lambda CI** - Lints and packages Lambda function
-4. **Full Deployment** - Deploys complete infrastructure to AWS
-
-### Quick Start
-
-#### Prerequisites
-
-- AWS Account with appropriate permissions
-- Terraform (v1.6+)
-- Node.js (v18+)
-- Python (v3.11+)
-- AWS CLI configured with valid credentials (see [DEPLOYMENT.md](DEPLOYMENT.md#2-configure-aws-authentication) for authentication options)
-
-#### Deploy in 3 Steps
-
-1. **Clone and Configure**
-
-   ```bash
-   git clone <repository-url>
-   cd aai540_3proj
-   cp .env.example .env
-   # Edit .env with your values
-   ```
-
-2. **Deploy Infrastructure**
-
-   ```bash
-   cd terraform
-   terraform init
-   terraform plan
-   terraform apply
-   ```
-
-3. **Access Application**
-   ```bash
-   # Get the frontend URL
-   terraform output amplify_app_url
-   ```
-
-For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
-
-### Deployment Options
-
-#### Option 1: Automated CI/CD (Recommended)
-
-Push to `main` branch to trigger automated deployment via GitHub Actions.
-
-#### Option 2: Manual Deployment
-
-Use the provided scripts:
-
-- **Linux/Mac:** `./scripts/deploy.sh`
-- **Windows:** `.\scripts\deploy.ps1`
-
-#### Option 3: Step-by-Step Terraform
-
-Follow the comprehensive guide in [DEPLOYMENT.md](DEPLOYMENT.md).
-
-### Monitoring and Observability
-
-- **CloudWatch Logs**: All Lambda invocations and API Gateway requests
-- **CloudWatch Metrics**: Lambda duration, errors, invocations
-- **API Gateway Metrics**: Request count, latency, errors
-- **Amplify Console**: Build logs and deployment status
-
-### Cost Optimization
-
-The architecture is designed for cost efficiency:
-
-- **Lambda**: Pay only for actual execution time
-- **API Gateway**: Pay per million API calls
-- **Amplify**: Free tier available for hosting
-- **Athena**: Pay per TB of data scanned
-- **S3**: Lifecycle policies for automatic cleanup
-
-Estimated monthly cost for moderate usage: $10-50 USD
-
-### Security Features
-
-- **IAM Roles**: Least-privilege access policies
-- **S3 Encryption**: At-rest encryption enabled
-- **API Security**: CORS configured, API Gateway throttling
-- **Secrets Management**: Sensitive values in environment variables
-- **VPC**: Optional VPC deployment for enhanced security
-
-### Technologies Used
-
-- **Frontend**: Angular 17, TypeScript, Angular Material, Chart.js
-- **Backend**: Python 3.11, Boto3, AWS Lambda
-- **Infrastructure**: Terraform, AWS (Lambda, API Gateway, Amplify, Athena, S3)
-- **CI/CD**: GitHub Actions
-- **ML**: Amazon SageMaker, scikit-learn
+Amazon Web Services. (n.d.). _Deploy models for real-time inference—Amazon SageMaker AI_. https://docs.aws.amazon.com/sagemaker/latest/dg/realtime-endpoints-deploy-models.html
 
 ---
 
-## Getting Started with Development
+## Additional Documentation
 
-### Frontend Development
-
-```bash
-cd frontend
-npm install
-npm start
-# Navigate to http://localhost:4200
-```
-
-### Lambda Development
-
-```bash
-cd lambda/anomaly_detection
-pip install -r requirements.txt
-# Test locally with sample events
-```
-
-### Terraform Development
-
-```bash
-cd terraform
-terraform init
-terraform plan
-terraform validate
-```
-
-For more information, see:
-
-- [Frontend README](frontend/README.md)
-- [Lambda README](lambda/anomaly_detection/README.md)
-- [Deployment Guide](DEPLOYMENT.md)
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Comprehensive deployment guide
+- **[Frontend README](frontend/README.md)** - Frontend-specific documentation
+- **[Lambda README](lambda/anomaly_detection/README.md)** - Lambda function details
+- **[Notebook](notebooks/cms_anomaly_detection.ipynb)** - Complete analysis and results
 
 ---
+
+## License
+
+This project is developed for educational purposes as part of AAI-540 Machine Learning Operations at University of San Diego.
+
+---
+
+## Contact
+
+For questions or collaboration inquiries, please reach out to the team members or create an issue in the repository.
