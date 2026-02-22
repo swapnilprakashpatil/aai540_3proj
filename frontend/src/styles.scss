@@ -1,0 +1,37 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+// Dark theme colors - Angular 18 syntax
+$dark-primary: mat.m2-define-palette(mat.$m2-blue-gray-palette, 700);
+$dark-accent: mat.m2-define-palette(mat.$m2-teal-palette, 500);
+$dark-warn: mat.m2-define-palette(mat.$m2-red-palette, 500);
+
+$dark-theme: mat.m2-define-dark-theme((
+  color: (
+    primary: $dark-primary,
+    accent: $dark-accent,
+    warn: $dark-warn,
+  )
+));
+
+@include mat.all-component-themes($dark-theme);
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 14px;
+  line-height: 1.6;
+}

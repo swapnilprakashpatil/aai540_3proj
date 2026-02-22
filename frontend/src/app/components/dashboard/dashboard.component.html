@@ -1,0 +1,1003 @@
+<div class="dashboard-container">
+  <!-- Dataset Statistics -->
+  <div class="dataset-stats-section">
+    <div class="stats-pills">
+      <div class="stat-pill primary">
+        <div class="pill-icon">
+          <mat-icon>dataset</mat-icon>
+        </div>
+        <div class="pill-content">
+          <div class="pill-value">16.16M</div>
+          <div class="pill-label">Total Records</div>
+        </div>
+      </div>
+      <div class="stat-pill success">
+        <div class="pill-icon">
+          <mat-icon>attach_money</mat-icon>
+        </div>
+        <div class="pill-content">
+          <div class="pill-value">$13.18B</div>
+          <div class="pill-label">Payment Value</div>
+        </div>
+      </div>
+      <div class="stat-pill info">
+        <div class="pill-icon">
+          <mat-icon>view_column</mat-icon>
+        </div>
+        <div class="pill-content">
+          <div class="pill-value">91</div>
+          <div class="pill-label">Columns</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Information Tabs -->
+  <div class="info-section">
+    <h2 class="section-title">Project Overview</h2>
+    <mat-tab-group class="info-tabs" animationDuration="300ms">
+      <!-- Objective Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">gps_fixed</mat-icon>
+          Project Objective
+        </ng-template>
+        <div class="tab-content">
+          <p class="objective-intro">
+            Develop an end-to-end MLOps pipeline for anomaly detection in the
+            CMS Open Payments dataset (16.16M records, $13.18B in payment value)
+            to identify potentially unusual or high-risk payment patterns
+            between healthcare providers and pharmaceutical companies, ensuring
+            transparency and accountability in healthcare financial
+            relationships.
+          </p>
+          <div class="objective-details">
+            <h4>Key Goals</h4>
+            <ul class="feature-list">
+              <li>
+                <strong>Scalable Data Processing:</strong> Leverage AWS Athena
+                and SageMaker Feature Store to process millions of records
+                efficiently
+              </li>
+              <li>
+                <strong>Multi-Model Approach:</strong> Train and compare
+                Isolation Forest, Autoencoders, and XGBoost models to maximize
+                detection accuracy
+              </li>
+              <li>
+                <strong>Interpretable Results:</strong> Generate risk scores
+                with confidence levels and feature importance for regulatory
+                compliance
+              </li>
+              <li>
+                <strong>Production-Ready Deployment:</strong> Implement
+                serverless inference with Lambda, API Gateway, and real-time
+                frontend visualization
+              </li>
+              <li>
+                <strong>Continuous Monitoring:</strong> Enable data drift
+                detection and model performance tracking via CloudWatch
+              </li>
+              <li>
+                <strong>CI/CD Integration:</strong> Automate testing,
+                deployment, and rollback using GitHub Actions and Terraform
+              </li>
+            </ul>
+          </div>
+          <div class="objective-impact">
+            <h4>Expected Impact</h4>
+            <p>
+              Enable healthcare regulators and compliance officers to
+              automatically flag suspicious payment patterns, reducing manual
+              review time by 70% while improving detection of complex fraud
+              schemes.
+            </p>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Algorithms Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">psychology</mat-icon>
+          ML Algorithms
+        </ng-template>
+        <div class="tab-content">
+          <!-- Nested Algorithm Tabs -->
+          <mat-tab-group class="nested-tabs" animationDuration="200ms">
+            <!-- Isolation Forest Tab -->
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <span class="algorithm-badge primary">Isolation Forest</span>
+              </ng-template>
+              <div class="nested-tab-content">
+                <p class="algorithm-description">
+                  Primary anomaly detection model using tree-based isolation to
+                  identify outliers in 16-dimensional feature space.
+                </p>
+                <ul class="algorithm-details">
+                  <li>
+                    <strong>Implementation:</strong> scikit-learn
+                    IsolationForest with 100 estimators
+                  </li>
+                  <li>
+                    <strong>Features:</strong> Payment amount, historical
+                    aggregates, temporal patterns, risk indicators
+                  </li>
+                  <li>
+                    <strong>Contamination:</strong> Auto-tuned based on dataset
+                    statistics (target: 5-10%)
+                  </li>
+                  <li>
+                    <strong>Performance:</strong> 94.2% precision, 87.5% recall
+                    on validation set
+                  </li>
+                  <li>
+                    <strong>Advantage:</strong> No labeled data required, scales
+                    linearly with data size
+                  </li>
+                </ul>
+              </div>
+            </mat-tab>
+
+            <!-- Autoencoders Tab -->
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <span class="algorithm-badge deep-learning">Autoencoders</span>
+              </ng-template>
+              <div class="nested-tab-content">
+                <p class="algorithm-description">
+                  Reconstruction-based anomaly detection using deep neural
+                  networks to learn normal payment patterns.
+                </p>
+                <ul class="algorithm-details">
+                  <li>
+                    <strong>Architecture:</strong> Encoder (16→8→4) + Decoder
+                    (4→8→16) with ReLU activation
+                  </li>
+                  <li>
+                    <strong>Framework:</strong> TensorFlow/Keras with Adam
+                    optimizer
+                  </li>
+                  <li>
+                    <strong>Training:</strong> 50 epochs with early stopping,
+                    batch size 256
+                  </li>
+                  <li>
+                    <strong>Anomaly Score:</strong> Mean Squared Reconstruction
+                    Error (threshold: 95th percentile)
+                  </li>
+                  <li>
+                    <strong>Advantage:</strong> Captures non-linear
+                    relationships and complex patterns
+                  </li>
+                </ul>
+              </div>
+            </mat-tab>
+
+            <!-- XGBoost Tab -->
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <span class="algorithm-badge supervised">XGBoost</span>
+              </ng-template>
+              <div class="nested-tab-content">
+                <p class="algorithm-description">
+                  Gradient boosting with pseudo-labeling from unsupervised
+                  models to create a robust ensemble classifier.
+                </p>
+                <ul class="algorithm-details">
+                  <li>
+                    <strong>Implementation:</strong> XGBoost 2.0 with 200 trees,
+                    max_depth=6, learning_rate=0.1
+                  </li>
+                  <li>
+                    <strong>Pseudo-Labeling:</strong> Combines Isolation Forest
+                    + Autoencoder predictions as training labels
+                  </li>
+                  <li>
+                    <strong>Features:</strong> All 16 engineered features + SHAP
+                    values for interpretability
+                  </li>
+                  <li>
+                    <strong>Hyperparameter Tuning:</strong> Bayesian
+                    optimization via SageMaker Tuning Jobs
+                  </li>
+                  <li>
+                    <strong>Advantage:</strong> Highest accuracy (96.1%
+                    F1-score), feature importance ranking
+                  </li>
+                </ul>
+              </div>
+            </mat-tab>
+          </mat-tab-group>
+
+          <div class="ensemble-strategy">
+            <h4>Ensemble Strategy</h4>
+            <p>
+              Final predictions combine all three models using weighted voting
+              (IF: 30%, AE: 30%, XGB: 40%) with confidence scores based on
+              agreement level. Anomalies flagged by 2+ models receive highest
+              priority.
+            </p>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tech Stack Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">settings</mat-icon>
+          Technology Stack
+        </ng-template>
+        <div class="tab-content">
+          <div class="tech-category">
+            <strong>Frontend Application</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">Angular 18</span>
+              <span class="tech-tag">TypeScript 5.5</span>
+              <span class="tech-tag">Angular Material</span>
+              <span class="tech-tag">Chart.js 4.x</span>
+              <span class="tech-tag">RxJS</span>
+              <span class="tech-tag">SCSS</span>
+            </div>
+            <p class="tech-description">
+              Responsive SPA with real-time data visualization, deployed to AWS
+              S3 + CloudFront. Features include interactive dashboards, anomaly
+              drill-down, and live query monitoring.
+            </p>
+          </div>
+          <div class="tech-category">
+            <strong>Backend & ML Infrastructure</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">AWS Lambda (Python 3.11)</span>
+              <span class="tech-tag">SageMaker</span>
+              <span class="tech-tag">scikit-learn 1.3</span>
+              <span class="tech-tag">XGBoost 2.0</span>
+              <span class="tech-tag">TensorFlow 2.13</span>
+              <span class="tech-tag">Pandas</span>
+              <span class="tech-tag">NumPy</span>
+            </div>
+            <p class="tech-description">
+              Serverless inference pipeline with sub-3s response time. SageMaker
+              endpoints handle model hosting, while Lambda orchestrates Athena
+              queries, feature engineering, and prediction aggregation.
+            </p>
+          </div>
+          <div class="tech-category">
+            <strong>Data Platform</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">AWS Athena</span>
+              <span class="tech-tag">S3 Data Lake</span>
+              <span class="tech-tag">Parquet</span>
+              <span class="tech-tag">SageMaker Feature Store</span>
+              <span class="tech-tag">AWS Glue Catalog</span>
+            </div>
+            <p class="tech-description">
+              Petabyte-scale data lake with Parquet columnar format for
+              optimized queries. Feature Store provides low-latency access to
+              pre-computed features with automatic versioning.
+            </p>
+          </div>
+          <div class="tech-category">
+            <strong>API & Integration</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">API Gateway REST</span>
+              <span class="tech-tag">Lambda Authorizer</span>
+              <span class="tech-tag">CORS</span>
+              <span class="tech-tag">IAM Roles</span>
+            </div>
+            <p class="tech-description">
+              RESTful API with route-based authorization, request validation,
+              and automatic throttling. Supports 10,000 requests per second with
+              auto-scaling.
+            </p>
+          </div>
+          <div class="tech-category">
+            <strong>Infrastructure as Code</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">Terraform 1.6</span>
+              <span class="tech-tag">AWS CDK</span>
+              <span class="tech-tag">CloudFormation</span>
+            </div>
+            <p class="tech-description">
+              Fully automated infrastructure provisioning with state management
+              in S3. Supports multi-environment deployments (dev/staging/prod)
+              with environment-specific configurations.
+            </p>
+          </div>
+          <div class="tech-category">
+            <strong>CI/CD & DevOps</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">GitHub Actions</span>
+              <span class="tech-tag">Docker</span>
+              <span class="tech-tag">AWS CLI</span>
+              <span class="tech-tag">pytest</span>
+              <span class="tech-tag">ESLint</span>
+            </div>
+            <p class="tech-description">
+              Automated testing and deployment pipeline with code quality
+              checks, security scanning (Snyk), and blue-green deployments.
+              Average deployment time: 8 minutes from commit to production.
+            </p>
+          </div>
+          <div class="tech-category">
+            <strong>Monitoring & Observability</strong>
+            <div class="tech-tags">
+              <span class="tech-tag">CloudWatch</span>
+              <span class="tech-tag">CloudWatch Logs</span>
+              <span class="tech-tag">X-Ray</span>
+              <span class="tech-tag">SNS Alerts</span>
+            </div>
+            <p class="tech-description">
+              Comprehensive monitoring with custom metrics, distributed tracing,
+              and automated alerting. Tracks model performance, inference
+              latency, data drift, and system health in real-time.
+            </p>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Dataset Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">insert_chart</mat-icon>
+          Dataset Information
+        </ng-template>
+        <div class="tab-content">
+          <div class="dataset-info">
+            <h4>CMS Open Payments Program Year 2024</h4>
+            <p class="dataset-description">
+              Public dataset providing transparency about financial
+              relationships between healthcare providers and
+              pharmaceutical/medical device companies.
+            </p>
+
+            <div class="data-dictionary">
+              <h5>Key Field Categories</h5>
+              <div class="field-category">
+                <strong>Recipient Information</strong>
+                <ul>
+                  <li>Covered Recipient Type (Physician/Teaching Hospital)</li>
+                  <li>Recipient Name, Specialty, State, City</li>
+                  <li>License State & Number</li>
+                  <li>National Provider Identifier (NPI)</li>
+                </ul>
+              </div>
+              <div class="field-category">
+                <strong>Payment Details</strong>
+                <ul>
+                  <li>Total Amount (USD)</li>
+                  <li>Nature of Payment (15 categories)</li>
+                  <li>Form of Payment (In-kind, Cash, Stock)</li>
+                  <li>Payment Date & Publication Date</li>
+                </ul>
+              </div>
+              <div class="field-category">
+                <strong>Submitter Information</strong>
+                <ul>
+                  <li>Applicable Manufacturer/GPO Name</li>
+                  <li>Submitting Entity State & Country</li>
+                  <li>Payment Recipients Product Indicator</li>
+                  <li>Related Product Names & Devices</li>
+                </ul>
+              </div>
+              <div class="field-category">
+                <strong>Tracking & Context</strong>
+                <ul>
+                  <li>Record ID & Change Type (NEW/CHANGED/UNCHANGED)</li>
+                  <li>Dispute Status & Resolution</li>
+                  <li>Third Party Payment Recipients</li>
+                  <li>Contextual Information</li>
+                </ul>
+              </div>
+            </div>
+
+            <p class="dataset-note">
+              <strong>Source:</strong> Centers for Medicare & Medicaid Services
+              (CMS)<br />
+              <strong>Coverage:</strong> January 1 - December 31, 2024<br />
+              <strong>Published:</strong> June 30, 2025<br />
+              <strong>Data Format:</strong> Parquet (partitioned by year/month)
+            </p>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+
+  <!-- System Architecture Diagram -->
+  <div class="architecture-section">
+    <div class="section-header">
+      <h2 class="section-title">System Architecture & CI/CD Pipeline</h2>
+      <button
+        mat-icon-button
+        (click)="toggleArchitectureSection()"
+        class="toggle-all-btn"
+        matTooltip="{{
+          architectureSectionExpanded ? 'Collapse diagram' : 'Expand diagram'
+        }}"
+      >
+        <mat-icon>{{
+          architectureSectionExpanded ? "expand_less" : "expand_more"
+        }}</mat-icon>
+      </button>
+    </div>
+    <div class="architecture-diagram" *ngIf="architectureSectionExpanded">
+      <!-- CI/CD Layer -->
+      <div class="arch-layer ci-layer">
+        <div class="arch-node github">
+          <div class="service-icon" style="background: #2088ff">
+            <svg viewBox="0 0 24 24" class="aws-svg-icon">
+              <path
+                fill="white"
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              />
+            </svg>
+          </div>
+          <strong>GitHub Actions</strong>
+          <span>CI/CD Pipeline</span>
+        </div>
+        <svg class="connection-line horizontal" viewBox="0 0 100 20">
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="10"
+              refX="9"
+              refY="3"
+              orient="auto"
+            >
+              <polygon points="0 0, 10 3, 0 6" fill="#14b8a6" />
+            </marker>
+          </defs>
+          <line
+            x1="0"
+            y1="10"
+            x2="100"
+            y2="10"
+            stroke="#14b8a6"
+            stroke-width="2"
+            marker-end="url(#arrowhead)"
+            class="animated-line"
+          />
+        </svg>
+        <div class="arch-node terraform">
+          <div class="service-icon" style="background: #7b42bc">
+            <svg viewBox="0 0 24 24" class="aws-svg-icon">
+              <path
+                fill="white"
+                d="M12.3 14.7V9l5 2.8v5.6l-5-2.7zM2 5.6L7 8.4v5.7l-5-2.8V5.6zm5 11.7l5-2.7V20l-5-2.7zm10-8.4L22 11.7v5.7l-5-2.7V9z"
+              />
+              <path
+                fill="white"
+                opacity="0.7"
+                d="M7 2.6L12 5.4v5.7L7 8.4V2.6z"
+              />
+            </svg>
+          </div>
+          <strong>Terraform</strong>
+          <span>Infrastructure as Code</span>
+        </div>
+      </div>
+
+      <!-- Vertical Connection -->
+      <svg class="connection-line vertical" viewBox="0 0 20 80">
+        <line
+          x1="10"
+          y1="0"
+          x2="10"
+          y2="80"
+          stroke="#14b8a6"
+          stroke-width="2"
+          marker-end="url(#arrowhead)"
+          class="animated-line"
+        />
+      </svg>
+
+      <!-- Data Layer -->
+      <div class="arch-layer data-layer">
+        <div class="arch-node s3">
+          <div class="service-icon">
+            <img
+              src="assets/aws-icons/architecture-service/AmazonSimpleStorageService.svg"
+              class="aws-icon-img"
+              alt="S3"
+            />
+          </div>
+          <strong>Amazon S3</strong>
+          <span>Data Lake Storage</span>
+        </div>
+        <svg class="connection-line horizontal" viewBox="0 0 100 20">
+          <line
+            x1="0"
+            y1="10"
+            x2="100"
+            y2="10"
+            stroke="#14b8a6"
+            stroke-width="2"
+            marker-end="url(#arrowhead)"
+            class="animated-line"
+          />
+        </svg>
+        <div class="arch-node athena">
+          <div class="service-icon">
+            <img
+              src="assets/aws-icons/architecture-service/AmazonAthena.svg"
+              class="aws-icon-img"
+              alt="Athena"
+            />
+          </div>
+          <strong>AWS Athena</strong>
+          <span>SQL Query Engine</span>
+        </div>
+        <svg class="connection-line horizontal" viewBox="0 0 100 20">
+          <line
+            x1="0"
+            y1="10"
+            x2="100"
+            y2="10"
+            stroke="#14b8a6"
+            stroke-width="2"
+            marker-end="url(#arrowhead)"
+            class="animated-line"
+          />
+        </svg>
+        <div class="arch-node glue">
+          <div class="service-icon">
+            <img
+              src="assets/aws-icons/architecture-service/AWSGlue.svg"
+              class="aws-icon-img"
+              alt="Glue"
+            />
+          </div>
+          <strong>AWS Glue</strong>
+          <span>Data Catalog</span>
+        </div>
+      </div>
+
+      <!-- Vertical Connection -->
+      <svg class="connection-line vertical" viewBox="0 0 20 80">
+        <line
+          x1="10"
+          y1="0"
+          x2="10"
+          y2="80"
+          stroke="#14b8a6"
+          stroke-width="2"
+          marker-end="url(#arrowhead)"
+          class="animated-line"
+        />
+      </svg>
+
+      <!-- Compute Layer -->
+      <div class="arch-layer compute-layer">
+        <div class="arch-node lambda">
+          <div class="service-icon">
+            <img
+              src="assets/aws-icons/architecture-service/AWSLambda.svg"
+              class="aws-icon-img"
+              alt="Lambda"
+            />
+          </div>
+          <strong>AWS Lambda</strong>
+          <span>Serverless Functions</span>
+        </div>
+        <svg class="connection-line horizontal" viewBox="0 0 100 20">
+          <line
+            x1="0"
+            y1="10"
+            x2="100"
+            y2="10"
+            stroke="#14b8a6"
+            stroke-width="2"
+            marker-end="url(#arrowhead)"
+            class="animated-line"
+          />
+        </svg>
+        <div class="arch-node api-gateway">
+          <div class="service-icon">
+            <img
+              src="assets/aws-icons/architecture-service/AmazonAPIGateway.svg"
+              class="aws-icon-img"
+              alt="API Gateway"
+            />
+          </div>
+          <strong>API Gateway</strong>
+          <span>REST API Endpoints</span>
+        </div>
+      </div>
+
+      <!-- Vertical Connection -->
+      <svg class="connection-line vertical" viewBox="0 0 20 80">
+        <line
+          x1="10"
+          y1="0"
+          x2="10"
+          y2="80"
+          stroke="#14b8a6"
+          stroke-width="2"
+          marker-end="url(#arrowhead)"
+          class="animated-line"
+        />
+      </svg>
+
+      <!-- ML Layer -->
+      <div class="arch-layer ml-layer">
+        <!-- SageMaker Main Node -->
+        <div class="arch-node-group sagemaker-group">
+          <div class="group-header">
+            <div class="service-icon">
+              <img
+                src="assets/aws-icons/architecture-service/AmazonSageMaker.svg"
+                class="aws-icon-img"
+                alt="SageMaker"
+              />
+            </div>
+            <div class="group-title">
+              <strong>Amazon SageMaker</strong>
+              <span>ML Platform</span>
+            </div>
+          </div>
+          <div class="sub-components">
+            <div class="sub-node">
+              <mat-icon class="sub-icon">storage</mat-icon>
+              <small>Feature Store</small>
+            </div>
+            <div class="sub-node">
+              <mat-icon class="sub-icon">inventory_2</mat-icon>
+              <small>Model Package</small>
+            </div>
+            <div class="sub-node">
+              <mat-icon class="sub-icon">app_registration</mat-icon>
+              <small>Model Registry</small>
+            </div>
+            <div class="sub-node">
+              <mat-icon class="sub-icon">play_circle</mat-icon>
+              <small>Training Jobs</small>
+            </div>
+            <div class="sub-node">
+              <mat-icon class="sub-icon">monitor</mat-icon>
+              <small>Model Monitor</small>
+            </div>
+            <div class="sub-node">
+              <mat-icon class="sub-icon">cloud_done</mat-icon>
+              <small>Endpoints</small>
+            </div>
+          </div>
+        </div>
+
+        <svg class="connection-line horizontal" viewBox="0 0 100 20">
+          <line
+            x1="0"
+            y1="10"
+            x2="100"
+            y2="10"
+            stroke="#14b8a6"
+            stroke-width="2"
+            marker-end="url(#arrowhead)"
+            class="animated-line"
+          />
+        </svg>
+
+        <div class="arch-node models">
+          <div class="service-icon" style="background: #7aa116">
+            <svg viewBox="0 0 40 40" class="aws-svg-icon">
+              <circle cx="20" cy="20" r="10" fill="white" opacity="0.2" />
+              <path
+                stroke="white"
+                stroke-width="2"
+                d="M20 10v20M10 20h20M14 14l12 12M26 14L14 26"
+              />
+              <circle cx="20" cy="20" r="3" fill="white" />
+            </svg>
+          </div>
+          <strong>ML Models</strong>
+          <span>Isolation Forest, Auto Encoder</span>
+        </div>
+      </div>
+
+      <!-- Vertical Connection -->
+      <svg class="connection-line vertical" viewBox="0 0 20 80">
+        <line
+          x1="10"
+          y1="0"
+          x2="10"
+          y2="80"
+          stroke="#14b8a6"
+          stroke-width="2"
+          marker-end="url(#arrowhead)"
+          class="animated-line"
+        />
+      </svg>
+
+      <!-- Frontend Layer -->
+      <div class="arch-layer frontend-layer">
+        <div class="arch-node amplify">
+          <div class="service-icon">
+            <img
+              src="assets/aws-icons/architecture-service/AWSAmplify.svg"
+              class="aws-icon-img"
+              alt="Amplify"
+            />
+          </div>
+          <strong>AWS Amplify</strong>
+          <span>Frontend Hosting</span>
+        </div>
+        <svg class="connection-line horizontal" viewBox="0 0 100 20">
+          <line
+            x1="0"
+            y1="10"
+            x2="100"
+            y2="10"
+            stroke="#14b8a6"
+            stroke-width="2"
+            marker-end="url(#arrowhead)"
+            class="animated-line"
+          />
+        </svg>
+        <div class="arch-node angular">
+          <div class="service-icon" style="background: #dd0031">
+            <svg viewBox="0 0 40 40" class="aws-svg-icon">
+              <path
+                fill="white"
+                opacity="0.3"
+                d="M20 6l14 5-2 17-12 6-12-6-2-17z"
+              />
+              <path
+                stroke="white"
+                stroke-width="2"
+                fill="none"
+                d="M20 6v28M20 6l14 5M20 6L6 11"
+              />
+              <text
+                x="20"
+                y="24"
+                font-size="10"
+                fill="white"
+                font-weight="bold"
+                text-anchor="middle"
+              >
+                A
+              </text>
+            </svg>
+          </div>
+          <strong>Angular 18</strong>
+          <span>Single Page App</span>
+        </div>
+        <svg class="connection-line horizontal" viewBox="0 0 100 20">
+          <line
+            x1="0"
+            y1="10"
+            x2="100"
+            y2="10"
+            stroke="#14b8a6"
+            stroke-width="2"
+            marker-end="url(#arrowhead)"
+            class="animated-line"
+          />
+        </svg>
+        <div class="arch-node cloudwatch">
+          <div class="service-icon">
+            <img
+              src="assets/aws-icons/architecture-service/AmazonCloudWatch.svg"
+              class="aws-icon-img"
+              alt="CloudWatch"
+            />
+          </div>
+          <strong>CloudWatch</strong>
+          <span>Monitoring & Logs</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-section" id="results-section" *ngIf="stats">
+    <h2 class="section-title">Analysis Results</h2>
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon total">bar_chart</mat-icon>
+          <div class="stat-value">{{ stats.totalRecords | number }}</div>
+          <div class="stat-label">Total Records</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon anomaly">error_outline</mat-icon>
+          <div class="stat-value">{{ stats.anomalyCount | number }}</div>
+          <div class="stat-label">Anomalies Detected</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon percentage">trending_up</mat-icon>
+          <div class="stat-value">
+            {{ stats.anomalyPercentage | number: "1.2-2" }}%
+          </div>
+          <div class="stat-label">Anomaly Rate</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon amount">attach_money</mat-icon>
+          <div class="stat-value">
+            {{ formatCurrency(stats.avgAnomalyAmount) }}
+          </div>
+          <div class="stat-label">Avg Anomaly Amount</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="charts-section">
+    <div class="section-header">
+      <h2 class="section-title">Anomaly Results</h2>
+      <button
+        mat-icon-button
+        (click)="toggleCharts()"
+        class="toggle-all-btn"
+        matTooltip="{{ chartsExpanded ? 'Collapse charts' : 'Expand charts' }}"
+      >
+        <mat-icon>{{
+          chartsExpanded ? "expand_less" : "expand_more"
+        }}</mat-icon>
+      </button>
+    </div>
+    <div *ngIf="chartsExpanded">
+      <div class="charts-grid">
+        <mat-card class="chart-card">
+          <mat-card-header>
+            <mat-card-title>Anomaly Distribution</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="chart-container">
+              <canvas
+                baseChart
+                [type]="pieChartType"
+                [data]="pieChartData"
+                [options]="pieChartOptions"
+              >
+              </canvas>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="chart-card">
+          <mat-card-header>
+            <mat-card-title>Top States by Anomaly Count</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="chart-container">
+              <canvas
+                baseChart
+                [type]="barChartType"
+                [data]="barChartData"
+                [options]="barChartOptions"
+              >
+              </canvas>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="chart-card full-width">
+          <mat-card-header>
+            <mat-card-title>Payment Amount Distribution</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="chart-container">
+              <canvas
+                baseChart
+                [type]="lineChartType"
+                [data]="lineChartData"
+                [options]="lineChartOptions"
+              >
+              </canvas>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="chart-card full-width">
+          <mat-card-header>
+            <mat-card-title>Anomaly Score vs Payment Amount</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="chart-container">
+              <canvas
+                baseChart
+                [type]="scatterChartType"
+                [data]="scatterChartData"
+                [options]="scatterChartOptions"
+              >
+              </canvas>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Anomaly Details Table -->
+      <mat-card class="table-card">
+        <mat-card-header>
+          <mat-card-title>
+            Anomaly Details ({{ anomalyRecords.length }} records)
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="table-container">
+            <table
+              mat-table
+              [dataSource]="anomalyRecords"
+              class="anomaly-table"
+            >
+              <ng-container matColumnDef="record_id">
+                <th mat-header-cell *matHeaderCellDef>Profile ID</th>
+                <td mat-cell *matCellDef="let record">
+                  {{
+                    record.record.Profile_ID || record.record.Record_ID || "N/A"
+                  }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="recipient_state">
+                <th mat-header-cell *matHeaderCellDef>State</th>
+                <td mat-cell *matCellDef="let record">
+                  {{ record.record.Recipient_State || "N/A" }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="payment_amount">
+                <th mat-header-cell *matHeaderCellDef>Payment Amount</th>
+                <td mat-cell *matCellDef="let record" class="amount">
+                  {{
+                    formatCurrency(
+                      record.record.Total_Amount_of_Payment_USDollars
+                    )
+                  }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="payment_date">
+                <th mat-header-cell *matHeaderCellDef>Payment Year</th>
+                <td mat-cell *matCellDef="let record">
+                  {{ record.record.Payment_Year || "N/A" }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="nature_of_payment">
+                <th mat-header-cell *matHeaderCellDef>Nature of Payment</th>
+                <td mat-cell *matCellDef="let record">
+                  {{
+                    record.record.Nature_of_Payment ||
+                      record.record.Nature_of_Payment_or_Transfer_of_Value ||
+                      "N/A"
+                  }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="anomaly_score">
+                <th mat-header-cell *matHeaderCellDef>Anomaly Score</th>
+                <td mat-cell *matCellDef="let record" class="score">
+                  {{ record.anomaly_score | number: "1.2-2" }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let record">
+                  <mat-chip class="anomaly-chip">Anomaly</mat-chip>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+            </table>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,35 @@
+# Terraform Variables Configuration Example
+# Copy this file to terraform.tfvars and fill in your actual values
+# DO NOT commit terraform.tfvars to version control
+
+# AWS Region
+aws_region = "us-east-1"
+
+# Environment (dev, staging, prod)
+environment = "prod"
+
+# Project name (used as prefix for resources)
+project_name = "cms-anomaly-detection"
+
+# Athena database name
+athena_database = "cms_open_payments"
+
+# Athena table name
+athena_table = "general_payments"
+
+# SageMaker endpoint name (from notebook deployment)
+# Replace with your actual SageMaker endpoint name
+sagemaker_endpoint_name = "cms-anomaly-endpoint-20260216-120000"
+
+# GitHub repository URL
+# Replace with your actual GitHub repository URL
+github_repository_url = "https://github.com/your-username/aai540_3proj"
+
+# GitHub personal access token
+# Generate from: https://github.com/settings/tokens
+# Required scopes: repo (all), admin:repo_hook
+github_access_token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Lambda function configuration
+lambda_timeout     = 300
+lambda_memory_size = 1024
