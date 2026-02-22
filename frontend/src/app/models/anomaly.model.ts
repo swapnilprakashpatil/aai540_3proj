@@ -30,6 +30,7 @@ export interface AnomalyResponse {
   results: AnomalyResult[];
   execution_time: number;
   timestamp: string;
+  athena_query?: string;
 }
 
 export interface ChartData {
